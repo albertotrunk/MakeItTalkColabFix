@@ -38,8 +38,7 @@ class ConvNorm(torch.nn.Module):
             self.conv.weight, gain=torch.nn.init.calculate_gain(w_init_gain))
 
     def forward(self, signal):
-        conv_signal = self.conv(signal)
-        return conv_signal
+        return self.conv(signal)
     
     
 
@@ -73,17 +72,19 @@ class Encoder(nn.Module):
             #x = self.dropout(F.relu(conv(x)))
             x = F.relu(conv(x))
         x = x.transpose(1, 2)
-        
+
         #self.lstm.flatten_parameters()
         outputs, _ = self.lstm(x)
         out_forward = outputs[:, :, :self.dim_neck]
         out_backward = outputs[:, :, self.dim_neck:]
-        
-        codes = []
-        for i in range(0, outputs.size(1), self.freq):
-            codes.append(torch.cat((out_forward[:,i+self.freq-1,:],out_backward[:,i,:]), dim=-1))
 
-        return codes
+        return [
+            torch.cat(
+                (out_forward[:, i + self.freq - 1, :], out_backward[:, i, :]),
+                dim=-1,
+            )
+            for i in range(0, outputs.size(1), self.freq)
+        ]
       
       
         
@@ -100,12 +101,10 @@ class Decoder(nn.Module):
     def forward(self, x):
         
         #self.lstm1.flatten_parameters()
-        
-        outputs, _ = self.lstm(x)
-        
-        decoder_output = self.linear_projection(outputs)
 
-        return decoder_output   
+        outputs, _ = self.lstm(x)
+
+        return self.linear_projection(outputs)   
     
     
     
@@ -129,7 +128,7 @@ class Postnet(nn.Module):
                 nn.GroupNorm(num_grp, 512))
         )
 
-        for i in range(1, 5 - 1):
+        for _ in range(1, 5 - 1):
             self.convolutions.append(
                 nn.Sequential(
                     ConvNorm(512,
@@ -178,25 +177,23 @@ class Generator(nn.Module):
         x = x.transpose(2,1)
         c_org = c_org.unsqueeze(-1).expand(-1, -1, x.size(-1))
         x = torch.cat((x, c_org), dim=1)
-                
+
         codes = self.encoder(x)
         if enc_on:
             return torch.cat(codes, dim=-1)
-        
-        tmp = []
-        for code in codes:
-            tmp.append(code.unsqueeze(1).expand(-1,self.freq,-1))
+
+        tmp = [code.unsqueeze(1).expand(-1,self.freq,-1) for code in codes]
         code_exp = torch.cat(tmp, dim=1)
-        
+
         encoder_outputs = torch.cat((code_exp, 
                                      c_trg.unsqueeze(1).expand(-1,x.size(-1),-1),
                                      f0_trg), dim=-1)
-        
+
         mel_outputs = self.decoder(encoder_outputs)
-                
+
         mel_outputs_postnet = self.postnet(mel_outputs.transpose(2,1))
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet.transpose(2,1)
-        
+
         return mel_outputs, mel_outputs_postnet, torch.cat(codes, dim=-1)
     
     

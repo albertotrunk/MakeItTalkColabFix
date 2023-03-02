@@ -44,7 +44,7 @@ class Audio2landmark_model():
         self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=1,
                                                            shuffle=False, num_workers=0,
                                                            collate_fn=self.eval_data.my_collate_in_segments)
-        print('EVAL num videos: {}'.format(len(self.eval_data)))
+        print(f'EVAL num videos: {len(self.eval_data)}')
 
         # Step 3: Load model
         self.G = Audio2landmark_pos(drop_out=0.5,
@@ -60,7 +60,9 @@ class Audio2landmark_model():
         model_dict.update(pretrained_dict)
         self.G.load_state_dict(model_dict)
 
-        print('======== LOAD PRETRAINED FACE ID MODEL {} ========='.format(opt_parser.load_a2l_G_name))
+        print(
+            f'======== LOAD PRETRAINED FACE ID MODEL {opt_parser.load_a2l_G_name} ========='
+        )
         self.G.to(device)
 
         ''' baseline model '''
@@ -71,7 +73,9 @@ class Audio2landmark_model():
         ckpt = torch.load(opt_parser.load_a2l_C_name)
         self.C.load_state_dict(ckpt['model_g_face_id'])
         # self.C.load_state_dict(ckpt['C'])
-        print('======== LOAD PRETRAINED FACE ID MODEL {} ========='.format(opt_parser.load_a2l_C_name))
+        print(
+            f'======== LOAD PRETRAINED FACE ID MODEL {opt_parser.load_a2l_C_name} ========='
+        )
         self.C.to(device)
 
         self.t_shape_idx = (27, 28, 29, 30, 33, 36, 39, 42, 45)
@@ -155,6 +159,8 @@ class Audio2landmark_model():
         data = self.eval_data
         dataloader = self.eval_dataloader
 
+        seg_bs = 512
+
         # Step 2: train for each batch
         for i, batch in enumerate(dataloader):
 
@@ -168,18 +174,12 @@ class Audio2landmark_model():
                 keys = ['audio_embed']
             for key in keys: # ['45hn7-LXDX8']: #['sxCbrYjBsGA']:#
                 # load saved emb
-                if(au_emb is None):
-                    emb_val = self.test_embs[key]
-                else:
-                    emb_val = au_emb[i]
-
+                emb_val = self.test_embs[key] if (au_emb is None) else au_emb[i]
                 inputs_emb = np.tile(emb_val, (inputs_emb.shape[0], 1))
                 inputs_emb = torch.tensor(inputs_emb, dtype=torch.float, requires_grad=False)
                 inputs_fl, inputs_au, inputs_emb = inputs_fl.to(device), inputs_au.to(device), inputs_emb.to(device)
 
                 std_fls_list, fls_pred_face_id_list, fls_pred_pos_list = [], [], []
-                seg_bs = 512
-
                 for j in range(0, inputs_fl.shape[0], seg_bs):
 
                     # Step 3.1: load segments
@@ -193,7 +193,7 @@ class Audio2landmark_model():
                     input_face_id = self.std_face_id
 
                     fl_dis_pred_pos, input_face_id = \
-                        self.__train_face_and_pos__(inputs_fl_segments, inputs_au_segments, inputs_emb_segments,
+                            self.__train_face_and_pos__(inputs_fl_segments, inputs_au_segments, inputs_emb_segments,
                                                            input_face_id)
 
                     fl_dis_pred_pos = (fl_dis_pred_pos + input_face_id).data.cpu().numpy()

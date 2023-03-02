@@ -19,10 +19,7 @@ def area_of_triangle(pts):
 
 def area_of_polygon(pts):
     l = pts.shape[0]
-    s = 0
-    for i in range(1, l-1):
-        s += area_of_triangle(pts[(0, i, i+1), :])
-    return s
+    return sum(area_of_triangle(pts[(0, i, i+1), :]) for i in range(1, l-1))
 
 def area_of_signed_triangle(pts):
 
@@ -33,7 +30,4 @@ def area_of_signed_triangle(pts):
 
 def area_of_signed_polygon(pts):
     l = pts.shape[0]
-    s = 0
-    for i in range(1, l-1):
-        s += area_of_signed_triangle(pts[(0, i, i+1), :])
-    return s
+    return sum(area_of_signed_triangle(pts[(0, i, i+1), :]) for i in range(1, l-1))

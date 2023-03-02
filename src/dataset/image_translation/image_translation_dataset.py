@@ -54,7 +54,7 @@ class image_translation_raw_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2][:-3]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -70,7 +70,9 @@ class image_translation_raw_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(fls.shape[0]-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(fls.shape[0] - 2)[
+            : self.num_random_frames
+        ]
 
         for j in range(int(fls.shape[0])):
             ret, img_video = video.read()
@@ -131,7 +133,7 @@ class image_translation_raw74_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2][:-3]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -148,7 +150,9 @@ class image_translation_raw74_dataset(data.Dataset):
         # save video and landmark in parallel
         frames = []
         fan_predict_landmarks = []
-        random_frame_indices = np.random.permutation(fls.shape[0]-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(fls.shape[0] - 2)[
+            : self.num_random_frames
+        ]
 
         for j in range(int(fls.shape[0])):
             ret, img_video = video.read()
@@ -166,7 +170,7 @@ class image_translation_raw74_dataset(data.Dataset):
         image_in = frames[1:, :, :]
         image_out = frames[0:-1, :, :]  # N x 3 x 256 x 256
 
-        return image_in, image_out, fan_predict_landmarks[0:-1]
+        return image_in, image_out, fan_predict_landmarks[:-1]
 
     def my_collate(self, batch):
         batch = filter(lambda x:x is not None, batch)
@@ -205,7 +209,9 @@ class image_translation_raw_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2][:-3]
-        random_video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        random_video_dir = os.path.join(
+            self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4'
+        )
         print('============================\nvideo_dir : ' + random_video_dir, item)
         random_video = cv2.VideoCapture(random_video_dir)
         if (random_video.isOpened() == False):
@@ -219,7 +225,7 @@ class image_translation_raw_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2][:-3]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -288,7 +294,7 @@ class image_translation_preprocessed_dataset(data.Dataset):
         fls = np.loadtxt(os.path.join(self.src_dir, fls_filename))
 
         # # ================= preprocessed VOX version ================================
-        video_dir = os.path.join(self.mp4_dir, fls_filename[10:-7]+'.mp4')
+        video_dir = os.path.join(self.mp4_dir, f'{fls_filename[10:-7]}.mp4')
         # ======================================================================
 
         video = cv2.VideoCapture(video_dir)
@@ -303,7 +309,9 @@ class image_translation_preprocessed_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(int(fls.shape[0]//self.fps_scale)-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(
+            int(fls.shape[0] // self.fps_scale) - 2
+        )[: self.num_random_frames]
 
         for j in range(int(fls.shape[0]//self.fps_scale)):
             ret, img_video = video.read()
@@ -363,7 +371,9 @@ class image_translation_preprocessed_test_dataset(data.Dataset):
         # load random face
         random_fls_filename = self.fls_filenames[max(item-1, 0)]
         # random_fls_filename = self.fls_filenames[max(item-1, 0)]
-        random_video_dir = os.path.join(self.mp4_dir, random_fls_filename[10:-7] + '.mp4')
+        random_video_dir = os.path.join(
+            self.mp4_dir, f'{random_fls_filename[10:-7]}.mp4'
+        )
         random_video = cv2.VideoCapture(random_video_dir)
         if (random_video.isOpened() == False):
             print('Unable to open video file')
@@ -371,7 +381,7 @@ class image_translation_preprocessed_test_dataset(data.Dataset):
         _, random_face = random_video.read()
 
         # # ================= preprocessed VOX version ================================
-        video_dir = os.path.join(self.mp4_dir, fls_filename[10:-7]+'.mp4')
+        video_dir = os.path.join(self.mp4_dir, f'{fls_filename[10:-7]}.mp4')
         # ======================================================================
 
         video = cv2.VideoCapture(video_dir)
@@ -449,7 +459,7 @@ class image_translation_raw98_dataset(data.Dataset):
             mp4_id = mp4_filename[0].split('_')[-1]
             mp4_vname = mp4_filename[1]
             mp4_vid = mp4_filename[2]
-            video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+            video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
             # print('============================\nvideo_dir : ' + video_dir, item)
             # ======================================================================
 
@@ -463,7 +473,7 @@ class image_translation_raw98_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(length-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(length-2)[:self.num_random_frames]
 
         for j in range(length):
             ret, img = video.read()
@@ -492,7 +502,7 @@ class image_translation_raw98_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -504,7 +514,7 @@ class image_translation_raw98_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(length-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(length-2)[:self.num_random_frames]
 
         for j in range(length):
             ret, img = video.read()
@@ -561,7 +571,7 @@ class image_translation_preprocessed98_dataset(data.Dataset):
         fls_filename = self.fls_filenames[item]
 
         # # ================= preprocessed VOX version ================================
-        video_dir = os.path.join(self.mp4_dir, fls_filename[10:-7]+'.mp4')
+        video_dir = os.path.join(self.mp4_dir, f'{fls_filename[10:-7]}.mp4')
         # ======================================================================
 
         video = cv2.VideoCapture(video_dir)
@@ -573,7 +583,7 @@ class image_translation_preprocessed98_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(length-2)[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(length-2)[:self.num_random_frames]
 
         for j in range(length):
             ret, img_video = video.read()
@@ -623,7 +633,9 @@ class image_translation_raw98_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2]
-        random_video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        random_video_dir = os.path.join(
+            self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4'
+        )
         print('============================\nvideo_dir : ' + random_video_dir, item)
         random_video = cv2.VideoCapture(random_video_dir)
         if (random_video.isOpened() == False):
@@ -638,7 +650,7 @@ class image_translation_raw98_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -651,7 +663,7 @@ class image_translation_raw98_test_dataset(data.Dataset):
         # save video and landmark in parallel
         frames = []
 
-        for j in range(length):
+        for _ in range(length):
             ret, img_video = video.read()
 
             img_video = cv2.resize(img_video, (256, 256))
@@ -695,7 +707,9 @@ class image_translation_preprocessed98_test_dataset(data.Dataset):
         # load random face
         random_fls_filename = self.fls_filenames[max(item-10, 0)]
         # random_fls_filename = self.fls_filenames[max(item-1, 0)]
-        random_video_dir = os.path.join(self.mp4_dir, random_fls_filename[10:-7] + '.mp4')
+        random_video_dir = os.path.join(
+            self.mp4_dir, f'{random_fls_filename[10:-7]}.mp4'
+        )
         random_video = cv2.VideoCapture(random_video_dir)
         if (random_video.isOpened() == False):
             print('Unable to open video file')
@@ -703,7 +717,7 @@ class image_translation_preprocessed98_test_dataset(data.Dataset):
         _, random_face = random_video.read()
 
         # # ================= preprocessed VOX version ================================
-        video_dir = os.path.join(self.mp4_dir, fls_filename[10:-7]+'.mp4')
+        video_dir = os.path.join(self.mp4_dir, f'{fls_filename[10:-7]}.mp4')
         # ======================================================================
 
         video = cv2.VideoCapture(video_dir)
@@ -715,7 +729,7 @@ class image_translation_preprocessed98_test_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        for j in range(length):
+        for _ in range(length):
             ret, img_video = video.read()
 
             img_video = cv2.resize(img_video, (256, 256))
@@ -771,7 +785,7 @@ class image_translation_raw98_with_audio_dataset(data.Dataset):
             mp4_id = mp4_filename[0].split('_')[-1]
             mp4_vname = mp4_filename[1]
             mp4_vid = mp4_filename[2]
-            video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+            video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
             # print('============================\nvideo_dir : ' + video_dir, item)
             # ======================================================================
 
@@ -785,7 +799,9 @@ class image_translation_raw98_with_audio_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        random_frame_indices = np.random.permutation(max(1, length-12))[0:self.num_random_frames]
+        random_frame_indices = np.random.permutation(max(1, length - 12))[
+            : self.num_random_frames
+        ]
         random_frame_indices = [item + 5 for item in random_frame_indices]
 
         for j in range(length):
@@ -801,9 +817,9 @@ class image_translation_raw98_with_audio_dataset(data.Dataset):
         image_out = frames[0:-1, :, :] # N x 3 x 256 x 256
 
         # audio
-        os.system('ffmpeg -y -loglevel error -i {} -vn -ar 16000 -ac 1 {}'.format(
-            video_dir, video_dir.replace('.mp4', '.wav')
-        ))
+        os.system(
+            f"ffmpeg -y -loglevel error -i {video_dir} -vn -ar 16000 -ac 1 {video_dir.replace('.mp4', '.wav')}"
+        )
         sample_rate, samples = wav.read(video_dir.replace('.mp4', '.wav'))
         assert (sample_rate == 16000)
         if (len(samples.shape) > 1):
@@ -824,7 +840,7 @@ class image_translation_raw98_with_audio_dataset(data.Dataset):
             assert sel_audio_clip.shape[1] == 80
             audio_in.append(np.expand_dims(cv2.resize(sel_audio_clip, (256, 256)), axis=0))
 
-        audio_in = np.stack(audio_in[0:-1], axis=0).astype(np.float32)
+        audio_in = np.stack(audio_in[:-1], axis=0).astype(np.float32)
         # image_in = np.concatenate([image_in, audio_in], axis=1)
 
         return image_in, image_out, audio_in
@@ -867,7 +883,9 @@ class image_translation_raw98_with_audio_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2]
-        random_video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        random_video_dir = os.path.join(
+            self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4'
+        )
         print('============================\nvideo_dir : ' + random_video_dir, item)
         random_video = cv2.VideoCapture(random_video_dir)
         if (random_video.isOpened() == False):
@@ -884,7 +902,7 @@ class image_translation_raw98_with_audio_test_dataset(data.Dataset):
         mp4_id = mp4_filename[0].split('_')[-1]
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2]
-        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, mp4_vid + '.mp4')
+        video_dir = os.path.join(self.mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
         # print('============================\nvideo_dir : ' + video_dir, item)
         # ======================================================================
 
@@ -896,7 +914,7 @@ class image_translation_raw98_with_audio_test_dataset(data.Dataset):
 
         # save video and landmark in parallel
         frames = []
-        for j in range(5, length-5):
+        for _ in range(5, length-5):
             ret, img_video = video.read()
 
             img_video = cv2.resize(img_video, (256, 256))
@@ -909,9 +927,9 @@ class image_translation_raw98_with_audio_test_dataset(data.Dataset):
         image_out = frames[:, 3:6]
 
         # audio
-        os.system('ffmpeg -y -loglevel error -i {} -vn -ar 16000 -ac 1 {}'.format(
-            video_dir, video_dir.replace('.mp4', '.wav')
-        ))
+        os.system(
+            f"ffmpeg -y -loglevel error -i {video_dir} -vn -ar 16000 -ac 1 {video_dir.replace('.mp4', '.wav')}"
+        )
         sample_rate, samples = wav.read(video_dir.replace('.mp4', '.wav'))
         assert (sample_rate == 16000)
         if (len(samples.shape) > 1):

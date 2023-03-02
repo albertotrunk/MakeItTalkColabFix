@@ -47,18 +47,15 @@ class Vis():
             writer.write(frame)
         writer.release()
 
-        if(audio_filenam is not None):
+        if (audio_filenam is not None):
             print(audio_filenam)
-            os.system('ffmpeg -y -i {} -i {} -strict -2 -shortest {}'.format(
-                os.path.join('examples', 'tmp.mp4'),
-                audio_filenam,
-                os.path.join('examples', '{}_av.mp4'.format(filename))
-            ))
+            os.system(
+                f"ffmpeg -y -i {os.path.join('examples', 'tmp.mp4')} -i {audio_filenam} -strict -2 -shortest {os.path.join('examples', f'{filename}_av.mp4')}"
+            )
         else:
-            os.system('ffmpeg -y -i {} {}'.format(
-                os.path.join('examples', 'tmp.mp4'),
-                os.path.join('examples', '{}_av.mp4'.format(filename))
-            ))
+            os.system(
+                f"ffmpeg -y -i {os.path.join('examples', 'tmp.mp4')} {os.path.join('examples', f'{filename}_av.mp4')}"
+            )
 
         os.remove(os.path.join('examples', 'tmp.mp4'))
 
@@ -86,7 +83,7 @@ class Vis():
         # draw_curve(list(range(60, 67)), loop=True, color=(0, 0, 255))
         # draw_curve(list(range(60, 64)), loop=False, color=(0, 0, 255))
 
-        draw_curve(list(range(0, 16)), color=(0, 255, 0))  # jaw
+        draw_curve(list(range(16)), color=(0, 255, 0))
         draw_curve(list(range(17, 21)), color=(0, 255, 0))  # eye brow
         draw_curve(list(range(22, 26)), color=(0, 255, 0))
         draw_curve(list(range(27, 35)), color=(0, 255, 0))  # nose
@@ -106,7 +103,7 @@ class Vis_old():
                  postfix='', root_dir=r'E:\Dataset\TalkingToon\Obama', ifsmooth=True, rand_start=0):
 
         print(root_dir)
-        self.src_dir = os.path.join(root_dir, r'nn_result/{}'.format(run_name))
+        self.src_dir = os.path.join(root_dir, f'nn_result/{run_name}')
         self.std_face = np.loadtxt(r'src/dataset/utils/STD_FACE_LANDMARKS.txt')
         self.std_face = self.std_face.reshape((-1, 204))
 
@@ -130,10 +127,10 @@ class Vis_old():
             writer.write(frame)
         writer.release()
 
-        if(os.path.exists(os.path.join(root_dir, 'demo_wav', '{}'.format(audio_filename)))):
-            ain = os.path.join(root_dir, 'demo_wav', '{}'.format(audio_filename))
+        if os.path.exists(os.path.join(root_dir, 'demo_wav', f'{audio_filename}')):
+            ain = os.path.join(root_dir, 'demo_wav', f'{audio_filename}')
         else:
-            ain = os.path.join(root_dir, 'raw_wav', '{}'.format(audio_filename))
+            ain = os.path.join(root_dir, 'raw_wav', f'{audio_filename}')
         # print(ain)
         # vin = ffmpeg.input(os.path.join(self.src_dir, 'tmp.mp4')).video
         # ain = ffmpeg.input(ain).audio
@@ -141,19 +138,16 @@ class Vis_old():
         # out = out.overwrite_output().global_args('-loglevel', 'quiet')
         # out.run()
 
-        os.system('ffmpeg -y -loglevel error -i {} -ss {} {}'.format(
-            ain, rand_start/62.5,
-            os.path.join(self.src_dir, '{}_a_tmp.wav'.format(av_name))
-        ))
+        os.system(
+            f"ffmpeg -y -loglevel error -i {ain} -ss {rand_start / 62.5} {os.path.join(self.src_dir, f'{av_name}_a_tmp.wav')}"
+        )
 
-        os.system('ffmpeg -y -loglevel error -i {} -i {} -pix_fmt yuv420p -strict -2 -shortest {}'.format(
-            os.path.join(self.src_dir, 'tmp.mp4'),
-            os.path.join(self.src_dir, '{}_a_tmp.wav'.format(av_name)),
-            os.path.join(self.src_dir, '{}_av.mp4'.format(av_name))
-        ))
+        os.system(
+            f"ffmpeg -y -loglevel error -i {os.path.join(self.src_dir, 'tmp.mp4')} -i {os.path.join(self.src_dir, f'{av_name}_a_tmp.wav')} -pix_fmt yuv420p -strict -2 -shortest {os.path.join(self.src_dir, f'{av_name}_av.mp4')}"
+        )
 
         os.remove(os.path.join(self.src_dir, 'tmp.mp4'))
-        os.remove(os.path.join(self.src_dir, '{}_a_tmp.wav'.format(av_name)))
+        os.remove(os.path.join(self.src_dir, f'{av_name}_a_tmp.wav'))
 
         # os.remove(os.path.join(self.src_dir, filename))
         # exit(0)
@@ -183,7 +177,7 @@ class Vis_old():
         # draw_curve(list(range(60, 67)), loop=True, color=(0, 0, 255))
         # draw_curve(list(range(60, 64)), loop=False, color=(0, 0, 255))
 
-        draw_curve(list(range(0, 16)), color=(0, 255, 0))  # jaw
+        draw_curve(list(range(16)), color=(0, 255, 0))
         draw_curve(list(range(17, 21)), color=(0, 255, 0))  # eye brow
         draw_curve(list(range(22, 26)), color=(0, 255, 0))
         draw_curve(list(range(27, 35)), color=(0, 255, 0))  # nose
@@ -255,7 +249,7 @@ class Vis_comp():
                 cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                          (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-        draw_curve(list(range(0, 16)), color=(0, 255, 0))  # jaw
+        draw_curve(list(range(16)), color=(0, 255, 0))
         draw_curve(list(range(17, 21)), color=(0, 255, 0))  # eye brow
         draw_curve(list(range(22, 26)), color=(0, 255, 0))
         draw_curve(list(range(27, 35)), color=(0, 255, 0))  # nose

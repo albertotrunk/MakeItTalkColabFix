@@ -125,7 +125,7 @@ class Av2Flau_Convertor():
         # probe['streams'] = probe['streams'][0::2]
 
         codec = {'video': '', 'audio': ''}
-        for i, stream in enumerate(probe['streams'][0:2]):
+        for stream in probe['streams'][:2]:
             codec[stream['codec_type']] = stream['codec_name']
 
         # create preclean video
@@ -155,7 +155,7 @@ class Av2Flau_Convertor():
         '''
 
         # load video
-        print('video_dir : ' + video_dir)
+        print(f'video_dir : {video_dir}')
         video = cv2.VideoCapture(video_dir)
 
         # return false if cannot open
@@ -287,7 +287,7 @@ class Av2Flau_Convertor():
                     cv2.line(img, (shape.part(idx_list[0]).x, shape.part(idx_list[0]).y),
                              (shape.part(idx_list[-1] + 1).x, shape.part(idx_list[-1] + 1).y), color, lineWidth)
 
-            draw_curve(list(range(0, 16)))  # jaw
+            draw_curve(list(range(16)))
             draw_curve(list(range(17, 21)))  # eye brow
             draw_curve(list(range(22, 26)))
             draw_curve(list(range(27, 35)))  # nose
@@ -304,7 +304,7 @@ class Av2Flau_Convertor():
                     cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                              (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-            draw_curve(list(range(0, 16)))  # jaw
+            draw_curve(list(range(16)))
             draw_curve(list(range(17, 21)))  # eye brow
             draw_curve(list(range(22, 26)))
             draw_curve(list(range(27, 35)))  # nose
@@ -371,8 +371,12 @@ class Av2Flau_Convertor():
         w, h = int(np.max(all_landmarks[:, :, 0])) + 20, int(np.max(all_landmarks[:, :, 1])) + 20
 
         # Step 2 : setup anchor face
-        print('Using exisiting ' + 'dataset/utils/ANCHOR_T_SHAPE_{}.txt'.format(len(self.t_shape_idx)))
-        anchor_t_shape = np.loadtxt('dataset/utils/ANCHOR_T_SHAPE_{}.txt'.format(len(self.t_shape_idx)))
+        print(
+            f'Using exisiting dataset/utils/ANCHOR_T_SHAPE_{len(self.t_shape_idx)}.txt'
+        )
+        anchor_t_shape = np.loadtxt(
+            f'dataset/utils/ANCHOR_T_SHAPE_{len(self.t_shape_idx)}.txt'
+        )
 
         registered_landmarks_to_save = []
         registered_affine_mat_to_save = []

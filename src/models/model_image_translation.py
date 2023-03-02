@@ -46,7 +46,7 @@ def weights_init_kaiming(m):
 
 
 def init_weights(net, init_type='normal'):
-    print('initialization method [%s]' % init_type)
+    print(f'initialization method [{init_type}]')
     if init_type == 'normal':
         net.apply(weights_init_normal)
     elif init_type == 'xavier':
@@ -54,7 +54,9 @@ def init_weights(net, init_type='normal'):
     elif init_type == 'kaiming':
         net.apply(weights_init_kaiming)
     else:
-        raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+        raise NotImplementedError(
+            f'initialization method [{init_type}] is not implemented'
+        )
 
 
 class FeatureExtraction(nn.Module):
@@ -63,7 +65,7 @@ class FeatureExtraction(nn.Module):
         downconv = nn.Conv2d(input_nc, ngf, kernel_size=4, stride=2, padding=1)
         model = [downconv, nn.ReLU(True), norm_layer(ngf)]
         for i in range(n_layers):
-            in_ngf = 2 ** i * ngf if 2 ** i * ngf < 512 else 512
+            in_ngf = min(2 ** i * ngf, 512)
             out_ngf = 2 ** (i + 1) * ngf if 2 ** i * ngf < 512 else 512
             downconv = nn.Conv2d(in_ngf, out_ngf, kernel_size=4, stride=2, padding=1)
             model += [downconv, nn.ReLU(True)]
@@ -100,8 +102,7 @@ class FeatureCorrelation(nn.Module):
         feature_B = feature_B.view(b, c, h * w).transpose(1, 2)
         # perform matrix mult.
         feature_mul = torch.bmm(feature_B, feature_A)
-        correlation_tensor = feature_mul.view(b, h, w, h * w).transpose(2, 3).transpose(1, 2)
-        return correlation_tensor
+        return feature_mul.view(b, h, w, h * w).transpose(2, 3).transpose(1, 2)
 
 
 class FeatureRegression(nn.Module):
@@ -189,9 +190,9 @@ class TpsGridGen(nn.Module):
                 self.P_Y_base = self.P_Y_base.cuda()
 
     def forward(self, theta):
-        warped_grid = self.apply_transformation(theta, torch.cat((self.grid_X, self.grid_Y), 3))
-
-        return warped_grid
+        return self.apply_transformation(
+            theta, torch.cat((self.grid_X, self.grid_Y), 3)
+        )
 
     def compute_L_inverse(self, X, Y):
         N = X.size()[0]  # num of points (along dim 0)
@@ -302,7 +303,7 @@ class UnetGenerator(nn.Module):
         # construct unet structure
         unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=None, norm_layer=norm_layer,
                                              innermost=True)
-        for i in range(num_downs - 5):
+        for _ in range(num_downs - 5):
             unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block,
                                                  norm_layer=norm_layer, use_dropout=use_dropout)
         unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block,
@@ -350,7 +351,7 @@ class UnetSkipConnectionBlock(nn.Module):
             upsample = nn.Upsample(scale_factor=2, mode='bilinear')
             upconv = nn.Conv2d(inner_nc, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
             down = [downrelu, downconv]
-            if norm_layer == None:
+            if norm_layer is None:
                 up = [uprelu, upsample, upconv]
             else:
                 up = [uprelu, upsample, upconv, upnorm]
@@ -358,7 +359,7 @@ class UnetSkipConnectionBlock(nn.Module):
         else:
             upsample = nn.Upsample(scale_factor=2, mode='bilinear')
             upconv = nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
-            if norm_layer == None:
+            if norm_layer is None:
                 down = [downrelu, downconv]
                 up = [uprelu, upsample, upconv]
             else:
@@ -373,10 +374,7 @@ class UnetSkipConnectionBlock(nn.Module):
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
-        if self.outermost:
-            return self.model(x)
-        else:
-            return torch.cat([x, self.model(x)], 1)
+        return self.model(x) if self.outermost else torch.cat([x, self.model(x)], 1)
 
 
 # UNet with residual blocks
@@ -384,7 +382,7 @@ class ResidualBlock(nn.Module):
     def __init__(self, in_features=64, norm_layer=nn.BatchNorm2d):
         super(ResidualBlock, self).__init__()
         self.relu = nn.ReLU(True)
-        if norm_layer == None:
+        if norm_layer is None:
             # hard to converge with out batch or instance norm
             self.block = nn.Sequential(
                 nn.Conv2d(in_features, in_features, 3, 1, 1, bias=False),
@@ -417,7 +415,7 @@ class ResUnetGenerator(nn.Module):
         unet_block = ResUnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=None, norm_layer=norm_layer,
                                                 innermost=True)
 
-        for i in range(num_downs - 5):
+        for _ in range(num_downs - 5):
             unet_block = ResUnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block,
                                                     norm_layer=norm_layer, use_dropout=use_dropout)
         unet_block = ResUnetSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block,
@@ -432,12 +430,7 @@ class ResUnetGenerator(nn.Module):
         self.model = unet_block
 
     def forward(self, input):
-        output = self.model(input)
-
-        # print("\tIn Model: input size", input.size(),
-        #       "output size", output.size())
-
-        return output
+        return self.model(input)
 
 
 # Defines the submodule with skip connection.
@@ -478,7 +471,7 @@ class ResUnetSkipConnectionBlock(nn.Module):
             upsample = nn.Upsample(scale_factor=2, mode='nearest')
             upconv = nn.Conv2d(inner_nc, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
             down = [downconv, downrelu] + res_downconv
-            if norm_layer == None:
+            if norm_layer is None:
                 up = [upsample, upconv, uprelu] + res_upconv
             else:
                 up = [upsample, upconv, upnorm, uprelu] + res_upconv
@@ -486,7 +479,7 @@ class ResUnetSkipConnectionBlock(nn.Module):
         else:
             upsample = nn.Upsample(scale_factor=2, mode='nearest')
             upconv = nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
-            if norm_layer == None:
+            if norm_layer is None:
                 down = [downconv, downrelu] + res_downconv
                 up = [upsample, upconv, uprelu] + res_upconv
             else:
@@ -501,10 +494,7 @@ class ResUnetSkipConnectionBlock(nn.Module):
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
-        if self.outermost:
-            return self.model(x)
-        else:
-            return torch.cat([x, self.model(x)], 1)
+        return self.model(x) if self.outermost else torch.cat([x, self.model(x)], 1)
 
 
 class Vgg19(nn.Module):
@@ -536,8 +526,7 @@ class Vgg19(nn.Module):
         h_relu3 = self.slice3(h_relu2)
         h_relu4 = self.slice4(h_relu3)
         h_relu5 = self.slice5(h_relu4)
-        out = [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
-        return out
+        return [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
 
 def gram_matrix(input):
     a, b, c, d = input.size()  # a=batch size(=1)
@@ -562,11 +551,7 @@ class StyleLoss(nn.Module):
 class VGGLoss(nn.Module):
     def __init__(self, model=None):
         super(VGGLoss, self).__init__()
-        if model is None:
-            self.vgg = Vgg19()
-        else:
-            self.vgg = model
-
+        self.vgg = Vgg19() if model is None else model
         self.vgg.cuda()
         # self.vgg.eval()
         self.criterion = nn.L1Loss()

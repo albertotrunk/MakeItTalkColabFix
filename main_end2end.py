@@ -8,6 +8,7 @@
  
 """
 
+
 import sys
 sys.path.append('thirdparty/AdaptiveWingLoss')
 import os, glob
@@ -31,7 +32,7 @@ CLOSE_INPUT_FACE_MOUTH = False
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--jpg', type=str, default='{}.jpg'.format(default_head_name))
+parser.add_argument('--jpg', type=str, default=f'{default_head_name}.jpg')
 parser.add_argument('--close_input_face_mouth', default=CLOSE_INPUT_FACE_MOUTH, action='store_true')
 
 parser.add_argument('--load_AUTOVC_name', type=str, default='examples/ckpt/ckpt_autovc.pth')
@@ -67,7 +68,7 @@ parser.add_argument('--use_11spk_only', default=False, action='store_true')
 opt_parser = parser.parse_args()
 
 ''' STEP 1: preprocess input single image '''
-img =cv2.imread('examples/' + opt_parser.jpg)
+img = cv2.imread(f'examples/{opt_parser.jpg}')
 predictor = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda', flip_input=True)
 shapes = predictor.get_landmarks(img)
 if (not shapes or len(shapes) != 1):
@@ -99,12 +100,14 @@ ains = glob.glob1('examples', '*.wav')
 ains = [item for item in ains if item is not 'tmp.wav']
 ains.sort()
 for ain in ains:
-    os.system('ffmpeg -y -loglevel error -i examples/{} -ar 16000 examples/tmp.wav'.format(ain))
-    shutil.copyfile('examples/tmp.wav', 'examples/{}'.format(ain))
+    os.system(
+        f'ffmpeg -y -loglevel error -i examples/{ain} -ar 16000 examples/tmp.wav'
+    )
+    shutil.copyfile('examples/tmp.wav', f'examples/{ain}')
 
     # au embedding
     from thirdparty.resemblyer_util.speaker_emb import get_spk_emb
-    me, ae = get_spk_emb('examples/{}'.format(ain))
+    me, ae = get_spk_emb(f'examples/{ain}')
     au_emb.append(me.reshape(-1))
 
     print('Processing audio file', ain)
@@ -157,7 +160,7 @@ else:
 fls = glob.glob1('examples', 'pred_fls_*.txt')
 fls.sort()
 
-for i in range(0,len(fls)):
+for i in range(len(fls)):
     fl = np.loadtxt(os.path.join('examples', fls[i])).reshape((-1, 68,3))
     fl[:, :, 0:2] = -fl[:, :, 0:2]
     fl[:, :, 0:2] = fl[:, :, 0:2] / scale - shift

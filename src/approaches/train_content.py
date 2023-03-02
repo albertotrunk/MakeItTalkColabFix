@@ -46,7 +46,7 @@ class Audio2landmark_model():
         self.train_dataloader = torch.utils.data.DataLoader(self.train_data, batch_size=opt_parser.batch_size,
                                                            shuffle=False, num_workers=0,
                                                            collate_fn=self.train_data.my_collate_in_segments_noemb)
-        print('TRAIN num videos: {}'.format(len(self.train_data)))
+        print(f'TRAIN num videos: {len(self.train_data)}')
 
         self.eval_data = Audio2landmark_Dataset(dump_dir=opt_parser.dump_dir,
                                                  dump_name='autovc_retrain_mel',
@@ -56,17 +56,19 @@ class Audio2landmark_model():
         self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=opt_parser.batch_size,
                                                             shuffle=False, num_workers=0,
                                                             collate_fn=self.eval_data.my_collate_in_segments_noemb)
-        print('EVAL num videos: {}'.format(len(self.eval_data)))
+        print(f'EVAL num videos: {len(self.eval_data)}')
 
         # Step 3: Load model
         self.C = Audio2landmark_content(num_window_frames=opt_parser.num_window_frames, hidden_size=opt_parser.hidden_size,
                                       in_size=opt_parser.in_size, use_prior_net=opt_parser.use_prior_net,
                                       bidirectional=False, drop_out=opt_parser.drop_out)
 
-        if(opt_parser.load_a2l_C_name.split('/')[-1] != ''):
+        if (opt_parser.load_a2l_C_name.split('/')[-1] != ''):
             ckpt = torch.load(opt_parser.load_a2l_C_name)
             self.C.load_state_dict(ckpt['model_g_face_id'])
-            print('======== LOAD PRETRAINED CONTENT BRANCH MODEL {} ========='.format(opt_parser.load_a2l_C_name))
+            print(
+                f'======== LOAD PRETRAINED CONTENT BRANCH MODEL {opt_parser.load_a2l_C_name} ========='
+            )
         self.C.to(device)
 
         self.t_shape_idx = (27, 28, 29, 30, 33, 36, 39, 42, 45)
@@ -95,12 +97,15 @@ class Audio2landmark_model():
         lip_region_w[:, 48*3:] = torch.cat([w] * 60, dim=1)
         lip_region_w = lip_region_w.detach().clone().requires_grad_(False)
 
-        if (self.opt_parser.use_lip_weight):
+        if self.opt_parser.use_lip_weight:
             # loss = torch.mean(torch.mean((fl_dis_pred + face_id - fls[:, 0, :]) ** 2, dim=1) * w)
-            loss = torch.mean(torch.abs(fl_dis_pred +face_id[0:1].detach() - fls_gt) * lip_region_w)
+            loss = torch.mean(
+                torch.abs(fl_dis_pred + face_id[:1].detach() - fls_gt)
+                * lip_region_w
+            )
         else:
             # loss = self.loss_mse(fl_dis_pred + face_id, fls[:, 0, :])
-            loss = torch.nn.functional.l1_loss(fl_dis_pred+face_id[0:1].detach(), fls_gt)
+            loss = torch.nn.functional.l1_loss(fl_dis_pred + face_id[:1].detach(), fls_gt)
 
         if (self.opt_parser.use_motion_loss):
             pred_motion = fl_dis_pred[:-1] - fl_dis_pred[1:]
@@ -109,13 +114,35 @@ class Audio2landmark_model():
 
         ''' use laplacian smooth loss '''
         if (self.opt_parser.lambda_laplacian_smooth_loss > 0.0):
-            n1 = [1] + list(range(0, 16)) + [18] + list(range(17, 21)) + [23] + list(range(22, 26)) + \
-                 [28] + list(range(27, 35)) + [41] + list(range(36, 41)) + [47] + list(range(42, 47)) + \
-                 [59] + list(range(48, 59)) + [67] + list(range(60, 67))
+            n1 = (
+                (
+                    (
+                        (
+                            (
+                                [1]
+                                + list(range(16))
+                                + [18]
+                                + list(range(17, 21))
+                                + [23]
+                                + list(range(22, 26))
+                                + [28]
+                            )
+                            + list(range(27, 35))
+                            + [41]
+                        )
+                        + list(range(36, 41))
+                        + [47]
+                    )
+                    + list(range(42, 47))
+                    + [59]
+                )
+                + list(range(48, 59))
+                + [67]
+            ) + list(range(60, 67))
             n2 = list(range(1, 17)) + [15] + list(range(18, 22)) + [20] + list(range(23, 27)) + [25] + \
-                 list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
-                 list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
-            V = (fl_dis_pred + face_id[0:1].detach()).view(-1, 68, 3)
+                     list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
+                     list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
+            V = (fl_dis_pred + face_id[:1].detach()).view(-1, 68, 3)
             L_V = V - 0.5 * (V[:, n1, :] + V[:, n2, :])
             G = fls_gt.view(-1, 68, 3)
             L_G = G - 0.5 * (G[:, n1, :] + G[:, n2, :])
@@ -154,7 +181,9 @@ class Audio2landmark_model():
             dataloader = self.eval_dataloader
             status = 'EVAL'
 
-        random_clip_index = np.random.permutation(len(dataloader))[0:self.opt_parser.random_clip_num]
+        random_clip_index = np.random.permutation(len(dataloader))[
+            : self.opt_parser.random_clip_num
+        ]
         print('random visualize clip index', random_clip_index)
 
         # Step 2: train for each batch
@@ -205,7 +234,7 @@ class Audio2landmark_model():
                         continue
 
                     fl_dis_pred_pos, input_face_id, loss = \
-                        self.__train_content__(inputs_fl_segments, inputs_au_segments, input_face_id, is_training)
+                            self.__train_content__(inputs_fl_segments, inputs_au_segments, input_face_id, is_training)
 
                     fl_dis_pred_pos = (fl_dis_pred_pos + input_face_id).data.cpu().numpy()
                     ''' solve inverse lip '''
@@ -325,11 +354,11 @@ class Audio2landmark_model():
 
 
     def __save_model__(self, save_type, epoch):
-        if (self.opt_parser.write):
-            torch.save({
-                'model_g_face_id': self.C.state_dict(),
-                'epoch': epoch
-            }, os.path.join(self.opt_parser.ckpt_dir, 'ckpt_{}.pth'.format(save_type)))
+        if self.opt_parser.write:
+            torch.save(
+                {'model_g_face_id': self.C.state_dict(), 'epoch': epoch},
+                os.path.join(self.opt_parser.ckpt_dir, f'ckpt_{save_type}.pth'),
+            )
 
 
 

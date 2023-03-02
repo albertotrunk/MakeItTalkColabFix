@@ -29,7 +29,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Image_translation_block():
 
     def __init__(self, opt_parser, single_test=False):
-        print('Run on device {}'.format(device))
+        print(f'Run on device {device}')
 
         # for key in vars(opt_parser).keys():
         #     print(key, ':', vars(opt_parser)[key])
@@ -62,16 +62,16 @@ class Image_translation_block():
             if(opt_parser.use_vox_dataset == 'raw'):
                 if(opt_parser.comb_fan_awing):
                     from src.dataset.image_translation.image_translation_dataset import \
-                        image_translation_raw74_dataset as image_translation_dataset
+                            image_translation_raw74_dataset as image_translation_dataset
                 elif(opt_parser.add_audio_in):
                     from src.dataset.image_translation.image_translation_dataset import image_translation_raw98_with_audio_dataset as \
-                        image_translation_dataset
+                            image_translation_dataset
                 else:
                     from src.dataset.image_translation.image_translation_dataset import image_translation_raw98_dataset as \
-                    image_translation_dataset
+                        image_translation_dataset
             else:
                 from src.dataset.image_translation.image_translation_dataset import image_translation_preprocessed98_dataset as \
-                    image_translation_dataset
+                        image_translation_dataset
 
             self.dataset = image_translation_dataset(num_frames=opt_parser.num_frames)
             self.dataloader = torch.utils.data.DataLoader(self.dataset,
@@ -114,7 +114,7 @@ class Image_translation_block():
                 pretrained_weights = checkpoint['state_dict']
                 model_weights = model_ft.state_dict()
                 pretrained_weights = {k: v for k, v in pretrained_weights.items() \
-                                      if k in model_weights}
+                                          if k in model_weights}
                 model_weights.update(pretrained_weights)
                 model_ft.load_state_dict(model_weights)
             print('Load AWing model sucessfully')
@@ -164,7 +164,7 @@ class Image_translation_block():
             with torch.no_grad():
                 # # online landmark (AwingNet)
                 image_in, image_out = \
-                    image_in.reshape(-1, 3, 256, 256).to(device), image_out.reshape(-1, 3, 256, 256).to(device)
+                        image_in.reshape(-1, 3, 256, 256).to(device), image_out.reshape(-1, 3, 256, 256).to(device)
                 inputs = image_out
                 outputs, boundary_channels = self.fa_model(inputs)
                 pred_heatmap = outputs[-1][:, :-1, :, :].detach().cpu()
@@ -247,9 +247,8 @@ class Image_translation_block():
             g_time += time.time() - st_batch
 
 
-            if(self.opt_parser.test_speed):
-                if(i >= 100):
-                    break
+            if self.opt_parser.test_speed and (i >= 100):
+                break
 
         print('Epoch time usage:', time.time() - st_epoch, 'I/O time usage:', time.time() - st_epoch - g_time, '\n=========================')
         if(self.opt_parser.test_speed):
@@ -263,12 +262,15 @@ class Image_translation_block():
             os.makedirs(os.path.join(self.opt_parser.ckpt_dir, self.opt_parser.name))
         except:
             pass
-        if (self.opt_parser.write):
-            torch.save({
-            'G': self.G.state_dict(),
-            'opt': self.optimizer,
-            'epoch': epoch
-        }, os.path.join(self.opt_parser.ckpt_dir, self.opt_parser.name, 'ckpt_{}.pth'.format(save_type)))
+        if self.opt_parser.write:
+            torch.save(
+                {'G': self.G.state_dict(), 'opt': self.optimizer, 'epoch': epoch},
+                os.path.join(
+                    self.opt_parser.ckpt_dir,
+                    self.opt_parser.name,
+                    f'ckpt_{save_type}.pth',
+                ),
+            )
 
     def train(self):
         for epoch in range(self.opt_parser.nepoch):
@@ -278,7 +280,7 @@ class Image_translation_block():
         if (self.opt_parser.use_vox_dataset == 'raw'):
             if(self.opt_parser.add_audio_in):
                 from src.dataset.image_translation.image_translation_dataset import \
-                    image_translation_raw98_with_audio_test_dataset as image_translation_test_dataset
+                        image_translation_raw98_with_audio_test_dataset as image_translation_test_dataset
             else:
                 from src.dataset.image_translation.image_translation_dataset import image_translation_raw98_test_dataset as image_translation_test_dataset
         else:
@@ -304,7 +306,7 @@ class Image_translation_block():
             # # online landmark (AwingNet)
             with torch.no_grad():
                 image_in, image_out = \
-                    image_in.reshape(-1, 3, 256, 256).to(device), image_out.reshape(-1, 3, 256, 256).to(device)
+                        image_in.reshape(-1, 3, 256, 256).to(device), image_out.reshape(-1, 3, 256, 256).to(device)
 
                 pred_landmarks = []
                 for j in range(image_in.shape[0] // 16):
@@ -324,13 +326,18 @@ class Image_translation_block():
             img_fls = np.stack(img_fls, axis=0).astype(np.float32) / 255.0
             image_fls_in = torch.tensor(img_fls, requires_grad=False).to(device)
 
-            if (self.opt_parser.add_audio_in):
+            if self.opt_parser.add_audio_in:
                 # print(image_fls_in.shape, image_in.shape, audio_in.shape)
-                image_in = torch.cat([image_fls_in,
-                                      image_in[0:image_fls_in.shape[0]],
-                                      audio_in[0:image_fls_in.shape[0]]], dim=1)
+                image_in = torch.cat(
+                    [
+                        image_fls_in,
+                        image_in[: image_fls_in.shape[0]],
+                        audio_in[: image_fls_in.shape[0]],
+                    ],
+                    dim=1,
+                )
             else:
-                image_in = torch.cat([image_fls_in, image_in[0:image_fls_in.shape[0]]], dim=1)
+                image_in = torch.cat([image_fls_in, image_in[:image_fls_in.shape[0]]], dim=1)
 
             # normal 68 test dataset
             # image_in, image_out = image_in.reshape(-1, 6, 256, 256), image_out.reshape(-1, 3, 256, 256)
@@ -395,7 +402,7 @@ class Image_translation_block():
             image_in, image_out = frame.transpose((2, 0, 1)), np.zeros(shape=(3, 256, 256))
             # image_in, image_out = frame.transpose((2, 1, 0)), np.zeros(shape=(3, 256, 256))
             image_in, image_out = torch.tensor(image_in, requires_grad=False), \
-                                  torch.tensor(image_out, requires_grad=False)
+                                      torch.tensor(image_out, requires_grad=False)
 
             image_in, image_out = image_in.reshape(-1, 6, 256, 256), image_out.reshape(-1, 3, 256, 256)
             image_in, image_out = image_in.to(device), image_out.to(device)
@@ -426,9 +433,9 @@ class Image_translation_block():
 
         if(filename is None):
             filename = 'v'
-        os.system('ffmpeg -loglevel error -y -i out.mp4 -i {} -pix_fmt yuv420p -strict -2 examples/{}_{}.mp4'.format(
-            'examples/'+filename[9:-16]+'.wav',
-            prefix, filename[:-4]))
+        os.system(
+            f'ffmpeg -loglevel error -y -i out.mp4 -i examples/{filename[9:-16]}.wav -pix_fmt yuv420p -strict -2 examples/{prefix}_{filename[:-4]}.mp4'
+        )
         # os.system('rm out.mp4')
 
         print('Time - ffmpeg add audio:', time.time() - st)

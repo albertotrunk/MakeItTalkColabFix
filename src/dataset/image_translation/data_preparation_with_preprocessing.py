@@ -33,12 +33,12 @@ def landmark_extraction(si, ei):
             pass
 
 
-    if(not os.path.isfile(os.path.join(out_dir, 'filename_index.txt'))):
+    if (not os.path.isfile(os.path.join(out_dir, 'filename_index.txt'))):
         # generate all file list
         files = glob.glob1(src_dir, '*.mp4')
         with open(os.path.join(out_dir, 'filename_index.txt'), 'w') as f:
             for i, file in enumerate(files):
-                f.write('{} {}\n'.format(i, file))
+                f.write(f'{i} {file}\n')
     else:
         with open(os.path.join(out_dir, 'filename_index.txt'), 'r') as f:
             lines = f.readlines()
@@ -51,4 +51,4 @@ def landmark_extraction(si, ei):
             c = Av2Flau_Convertor(video_dir=os.path.join(src_dir, file),
                                   out_dir=out_dir, idx=idx)
             c.convert(show=False) #  (save_audio=False, register=False, show=False)
-            print('Idx: {}, Processed time (min): {}'.format(idx, (time.time() - st) / 60.0))
+            print(f'Idx: {idx}, Processed time (min): {(time.time() - st) / 60.0}')

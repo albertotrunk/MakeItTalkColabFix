@@ -31,7 +31,9 @@ class AutoVC_mel_Convertor():
         selected_index = rand_perm[proportion_idx[0] : proportion_idx[1]]
         self.selected_filenames = [self.filenames[i] for i in selected_index]
 
-        print('{} out of {} are in this portion'.format(len(self.selected_filenames), len(self.filenames)))
+        print(
+            f'{len(self.selected_filenames)} out of {len(self.filenames)} are in this portion'
+        )
 
     def __convert_single_only_au_AutoVC_format_to_dataset__(self, filename, build_train_dataset=True):
         """
@@ -144,7 +146,6 @@ class AutoVC_mel_Convertor():
         return aus
 
     def convert_single_wav_to_input(self, audio_filename):
-        aus = []
         audio_file = os.path.join(self.src_dir, 'demo_wav', audio_filename)
 
         # Default param
@@ -185,15 +186,9 @@ class AutoVC_mel_Convertor():
         stft_abs = stft_abs[:, 0:audio_stft_length]
 
         audio_wav_length = int((fl_length - 2) * sample_rate / FPS)
-        wav_signal = samples[0:audio_wav_length]
+        wav_signal = samples[:audio_wav_length]
 
-        # # Step 6 : Save audio
-        # info_audio = (0, stft_signal, fl_length - 2, audio_stft_length, audio_wav_length)
-        # au_data = (stft_abs, wav_signal, info_audio)
-
-        aus.append((stft_abs.T, None, (0, audio_filename, 0)))
-
-        return aus
+        return [(stft_abs.T, None, (0, audio_filename, 0))]
 
 
     def convert_single_wav_to_autovc_input(self, audio_filename, autovc_model_path):

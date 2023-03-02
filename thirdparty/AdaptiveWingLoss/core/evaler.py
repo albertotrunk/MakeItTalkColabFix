@@ -23,8 +23,8 @@ def eval_model(model, dataloaders, dataset_sizes,
                save_path='./', num_landmarks=68):
     global_nme = 0
     model.eval()
-    for epoch in range(epoches):
-        running_loss = 0
+    running_loss = 0
+    for _ in range(epoches):
         step = 0
         total_nme = 0
         total_count = 0
@@ -36,7 +36,6 @@ def eval_model(model, dataloaders, dataset_sizes,
         with torch.no_grad():
             for data in dataloaders[dataset]:
                 total_runtime = 0
-                run_count = 0
                 step_start = time.time()
                 step += 1
                 # get the inputs
@@ -59,7 +58,7 @@ def eval_model(model, dataloaders, dataset_sizes,
                 outputs, boundary_channels = model(inputs)
                 single_end = time.time()
                 total_runtime += time.time() - single_start
-                run_count += 1
+                run_count = 0 + 1
                 step_end = time.time()
                 for i in range(inputs.shape[0]):
                     print(inputs.shape)
@@ -139,7 +138,7 @@ def vis_landmark_on_img(img, shape, linewidth=2):
             cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                      (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-    draw_curve(list(range(0, 32)))  # jaw
+    draw_curve(list(range(32)))
     draw_curve(list(range(33, 41)), color=(0, 0, 255), loop=True)  # eye brow
     draw_curve(list(range(42, 50)), color=(0, 0, 255), loop=True)
     draw_curve(list(range(51, 59)))  # nose
