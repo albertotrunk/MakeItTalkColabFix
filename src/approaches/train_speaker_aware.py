@@ -32,7 +32,7 @@ class Speaker_aware_branch():
         print('Run on device:', device)
 
         # Step 1 : load opt_parser
-        for key in vars(opt_parser).keys():
+        for key in vars(opt_parser):
             print(key, ':', vars(opt_parser)[key])
         self.opt_parser = opt_parser
         self.dump_dir = opt_parser.dump_dir
@@ -43,7 +43,7 @@ class Speaker_aware_branch():
         self.std_face_id = self.std_face_id.reshape(1, 204)
         self.std_face_id = torch.tensor(self.std_face_id, requires_grad=False, dtype=torch.float).to(device)
 
-        if(not opt_parser.test_end2end):
+        if (not opt_parser.test_end2end):
             # Step 2: Load dataset (train/eval)
             self.train_data = Speaker_aware_branch_Dataset(dump_dir=self.dump_dir, dump_name=opt_parser.dump_file_name,
                                                     num_window_frames=opt_parser.num_window_frames,
@@ -53,7 +53,7 @@ class Speaker_aware_branch():
                                                                 shuffle=False, num_workers=0,
                                                                 collate_fn=self.train_data.my_collate_in_segments)
 
-            print('Train num videos: {}'.format(len(self.train_data)))
+            print(f'Train num videos: {len(self.train_data)}')
             self.eval_data = Speaker_aware_branch_Dataset(dump_dir=self.dump_dir, dump_name=opt_parser.dump_file_name,
                                                    num_window_frames=opt_parser.num_window_frames,
                                                    num_window_step=opt_parser.num_window_step,
@@ -61,7 +61,6 @@ class Speaker_aware_branch():
             self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=opt_parser.batch_size,
                                                                shuffle=False, num_workers=0,
                                                                collate_fn=self.eval_data.my_collate_in_segments)
-            print('EVAL num videos: {}'.format(len(self.eval_data)))
         else:
             self.eval_data = Speaker_aware_branch_Dataset(dump_dir='examples/dump',
                                                     dump_name='random',
@@ -76,7 +75,7 @@ class Speaker_aware_branch():
             self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=1,
                                                                shuffle=False, num_workers=0,
                                                                collate_fn=self.eval_data.my_collate_in_segments)
-            print('EVAL num videos: {}'.format(len(self.eval_data)))
+        print(f'EVAL num videos: {len(self.eval_data)}')
         # exit(0)
 
         # Step 3: Load model
@@ -111,7 +110,9 @@ class Speaker_aware_branch():
                                if 'bilstm' in k or 'fc_prior' in k}
             model_dict.update(pretrained_dict)
             self.G.load_state_dict(model_dict)
-            print('======== LOAD INIT POS MODEL {} ========='.format(opt_parser.init_content_encoder))
+            print(
+                f'======== LOAD INIT POS MODEL {opt_parser.init_content_encoder} ========='
+            )
 
         if (opt_parser.load_a2l_G_name.split('/')[-1] != ''):
             model_dict = self.G.state_dict()
@@ -121,7 +122,9 @@ class Speaker_aware_branch():
             model_dict.update(pretrained_dict)
 
             self.G.load_state_dict(model_dict)
-            print('======== LOAD PRETRAINED SPEAKER AWARE MODEL {} ========='.format(opt_parser.load_a2l_G_name))
+            print(
+                f'======== LOAD PRETRAINED SPEAKER AWARE MODEL {opt_parser.load_a2l_G_name} ========='
+            )
 
         self.G.to(device)
 
@@ -130,7 +133,9 @@ class Speaker_aware_branch():
                                         bidirectional=False, drop_out=0.)
         ckpt = torch.load(opt_parser.load_a2l_C_name)
         self.C.load_state_dict(ckpt['model_g_face_id'])
-        print('======== LOAD PRETRAINED FACE ID MODEL {} ========='.format(opt_parser.load_a2l_C_name))
+        print(
+            f'======== LOAD PRETRAINED FACE ID MODEL {opt_parser.load_a2l_C_name} ========='
+        )
         self.C.to(device)
 
         self.loss_mse = torch.nn.MSELoss()
@@ -296,7 +301,7 @@ class Speaker_aware_branch():
             fl_dis_pred += baseline_pred_fls.detach()
 
         # reconstruct face through pos
-        fl_dis_pred = fl_dis_pred + face_id[0:1].detach()
+        fl_dis_pred = fl_dis_pred + face_id[:1].detach()
 
         # reg fls loss
         loss_reg_fls = torch.nn.functional.l1_loss(fl_dis_pred, reg_fls_gt)
@@ -305,27 +310,47 @@ class Speaker_aware_branch():
         ''' use laplacian smooth loss '''
         loss_laplacian = 0.
         if (self.opt_parser.lambda_laplacian_smooth_loss > 0.0):
-            n1 = [1] + list(range(0, 16)) + [18] + list(range(17, 21)) + [23] + list(range(22, 26)) + \
-                 [28] + list(range(27, 35)) + [41] + list(range(36, 41)) + [47] + list(range(42, 47)) + \
-                 [59] + list(range(48, 59)) + [67] + list(range(60, 67))
+            n1 = (
+                (
+                    (
+                        (
+                            (
+                                [1]
+                                + list(range(16))
+                                + [18]
+                                + list(range(17, 21))
+                                + [23]
+                                + list(range(22, 26))
+                                + [28]
+                            )
+                            + list(range(27, 35))
+                            + [41]
+                        )
+                        + list(range(36, 41))
+                        + [47]
+                    )
+                    + list(range(42, 47))
+                    + [59]
+                )
+                + list(range(48, 59))
+                + [67]
+            ) + list(range(60, 67))
             n2 = list(range(1, 17)) + [15] + list(range(18, 22)) + [20] + list(range(23, 27)) + [25] + \
-                 list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
-                 list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
-            V = (fl_dis_pred + face_id[0:1]).view(-1, 68, 3)
+                     list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
+                     list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
+            V = (fl_dis_pred + face_id[:1]).view(-1, 68, 3)
             L_V = V - 0.5 * (V[:, n1, :] + V[:, n2, :])
             G = reg_fls_gt.view(-1, 68, 3)
             L_G = G - 0.5 * (G[:, n1, :] + G[:, n2, :])
             loss_laplacian = torch.nn.functional.l1_loss(L_V, L_G)
 
         # pos loss
-        if(self.opt_parser.pos_dim == 7):
+        if (self.opt_parser.pos_dim == 7):
             pos_gt = torch.cat([rot_quats[:, 0], rot_trans[:, 0, :, 3]], dim=1)
-            # pos_pred[:, 0:4] = torch.nn.functional.normalize(pos_pred[:, 0:4], p=2, dim=1)
-            loss_pos = torch.nn.functional.l1_loss(pos_pred, pos_gt)
         else:
             pos_gt = rot_trans[:, 0].view(-1, 12)
-            loss_pos = torch.nn.functional.l1_loss(pos_pred, pos_gt)
-
+        # pos_pred[:, 0:4] = torch.nn.functional.normalize(pos_pred[:, 0:4], p=2, dim=1)
+        loss_pos = torch.nn.functional.l1_loss(pos_pred, pos_gt)
         loss = loss_reg_fls + loss_laplacian * self.opt_parser.lambda_laplacian_smooth_loss + loss_pos
         # loss = loss_pos
 

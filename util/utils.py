@@ -49,18 +49,17 @@ class Record():
         self.data[t], self.count[t] = 0.0, 0.0
 
     def is_better(self, t, greater):
-        if(self.max_min_data == None):
+        if self.max_min_data is None:
             self.max_min_data = self.data[t]
             return True
         else:
-            if(greater):
+            if greater:
                 if(self.data[t] > self.max_min_data):
                     self.max_min_data = self.data[t]
                     return True
-            else:
-                if (self.data[t] < self.max_min_data):
-                    self.max_min_data = self.data[t]
-                    return True
+            elif (self.data[t] < self.max_min_data):
+                self.max_min_data = self.data[t]
+                return True
         return False
 
 def weight_init(m):
@@ -153,7 +152,7 @@ def vis_landmark_on_img(img, shape, linewidth=2):
                 cv2.line(img, (shape.part(idx_list[0]).x, shape.part(idx_list[0]).y),
                          (shape.part(idx_list[-1] + 1).x, shape.part(idx_list[-1] + 1).y), color, lineWidth)
 
-        draw_curve(list(range(0, 16)))  # jaw
+        draw_curve(list(range(16)))
         draw_curve(list(range(17, 21)), color=(0, 0, 255))  # eye brow
         draw_curve(list(range(22, 26)), color=(0, 0, 255))
         draw_curve(list(range(27, 35)))  # nose
@@ -170,7 +169,7 @@ def vis_landmark_on_img(img, shape, linewidth=2):
                 cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                          (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-        draw_curve(list(range(0, 16)))  # jaw
+        draw_curve(list(range(16)))
         draw_curve(list(range(17, 21)), color=(0, 0, 255))  # eye brow
         draw_curve(list(range(22, 26)), color=(0, 0, 255))
         draw_curve(list(range(27, 35)))  # nose
@@ -190,7 +189,7 @@ def vis_landmark_on_plt(fl,  x_offset=0.0, show_now=True, c='r'):
             plt.plot((shape[idx_list[0], 0] + x_offset, shape[idx_list[-1] + 1, 0] + x_offset),
                      (-shape[idx_list[0], 1], -shape[idx_list[-1] + 1, 1]), c=c, lineWidth=1)
 
-    draw_curve(fl, list(range(0, 16)), x_offset=x_offset, c=c)  # jaw
+    draw_curve(fl, list(range(16)), x_offset=x_offset, c=c)
     draw_curve(fl, list(range(17, 21)), x_offset=x_offset, c=c)  # eye brow
     draw_curve(fl, list(range(22, 26)), x_offset=x_offset, c=c)
     draw_curve(fl, list(range(27, 35)), x_offset=x_offset, c=c)  # nose
@@ -251,7 +250,7 @@ def smooth(x, window_len=11, window='hanning'):
     if window_len < 3:
         return x
 
-    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+    if window not in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
         raise(ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
 
     s = numpy.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
@@ -259,10 +258,9 @@ def smooth(x, window_len=11, window='hanning'):
     if window == 'flat':  # moving average
         w = numpy.ones(window_len, 'd')
     else:
-        w = eval('numpy.' + window + '(window_len)')
+        w = eval(f'numpy.{window}(window_len)')
 
-    y = numpy.convolve(w / w.sum(), s, mode='valid')
-    return y
+    return numpy.convolve(w / w.sum(), s, mode='valid')
 
 
 def get_puppet_info(DEMO_CH, ROOT_DIR):
@@ -298,10 +296,10 @@ def get_puppet_info(DEMO_CH, ROOT_DIR):
         bound = np.array([0, 0, 0, 140, 0, 280, 249, 280, 499, 280, 499, 140, 499, 0, 249, 0]).reshape(1, -1)
         scale, shift = -0.012986159189209149, np.array([-237.27065, -79.2465])
     else:
-        if (os.path.exists(os.path.join(ROOT_DIR, DEMO_CH + '.jpg'))):
-            img = cv2.imread(os.path.join(ROOT_DIR, DEMO_CH + ".jpg"))
-        elif (os.path.exists(os.path.join(ROOT_DIR, DEMO_CH + '.png'))):
-            img = cv2.imread(os.path.join(ROOT_DIR, DEMO_CH + ".png"))
+        if os.path.exists(os.path.join(ROOT_DIR, f'{DEMO_CH}.jpg')):
+            img = cv2.imread(os.path.join(ROOT_DIR, f"{DEMO_CH}.jpg"))
+        elif os.path.exists(os.path.join(ROOT_DIR, f'{DEMO_CH}.png')):
+            img = cv2.imread(os.path.join(ROOT_DIR, f"{DEMO_CH}.png"))
         else:
             print('not file founded.')
             exit(0)
@@ -320,7 +318,7 @@ def get_puppet_info(DEMO_CH, ROOT_DIR):
                           h//4, -B,
                           h // 2, -B,
                           h//4*3, -B]).reshape(1, -1)
-        ss = np.loadtxt(os.path.join(ROOT_DIR, DEMO_CH + '_scale_shift.txt'))
+        ss = np.loadtxt(os.path.join(ROOT_DIR, f'{DEMO_CH}_scale_shift.txt'))
         scale, shift = ss[0], np.array([ss[1], ss[2]])
 
     return bound, scale, shift

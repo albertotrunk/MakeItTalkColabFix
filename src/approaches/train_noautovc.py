@@ -31,7 +31,7 @@ class Speaker_aware_branch():
         print('Run on device:', device)
 
         # Step 1 : load opt_parser
-        for key in vars(opt_parser).keys():
+        for key in vars(opt_parser):
             print(key, ':', vars(opt_parser)[key])
 
         self.opt_parser = opt_parser
@@ -49,7 +49,7 @@ class Speaker_aware_branch():
                                                             shuffle=False, num_workers=0,
                                                             collate_fn=self.train_data.my_collate_in_segments_noemb)
 
-        print('Train num videos: {}'.format(len(self.train_data)))
+        print(f'Train num videos: {len(self.train_data)}')
         self.eval_data = Audio2landmark_Dataset(dump_dir=self.dump_dir, dump_name=opt_parser.dump_file_name,
                                                num_window_frames=opt_parser.num_window_frames,
                                                num_window_step=opt_parser.num_window_step,
@@ -57,7 +57,7 @@ class Speaker_aware_branch():
         self.eval_dataloader = torch.utils.data.DataLoader(self.eval_data, batch_size=opt_parser.batch_size,
                                                            shuffle=False, num_workers=0,
                                                            collate_fn=self.eval_data.my_collate_in_segments_noemb)
-        print('EVAL num videos: {}'.format(len(self.eval_data)))
+        print(f'EVAL num videos: {len(self.eval_data)}')
 
         # Step 3: Load model
         self.G = Audio2landmark_speaker_aware(
@@ -92,7 +92,9 @@ class Speaker_aware_branch():
             model_dict.update(pretrained_dict)
 
             self.G.load_state_dict(model_dict)
-            print('======== LOAD PRETRAINED SPEAKER AWARE MODEL {} ========='.format(opt_parser.load_a2l_G_name))
+            print(
+                f'======== LOAD PRETRAINED SPEAKER AWARE MODEL {opt_parser.load_a2l_G_name} ========='
+            )
         self.G.to(device)
 
         self.loss_mse = torch.nn.MSELoss()
@@ -129,19 +131,43 @@ class Speaker_aware_branch():
         fl_dis_pred, pos_pred, _, spk_encode = self.G(aus, face_id)
 
         # reg fls loss
-        loss_reg_fls = torch.nn.functional.l1_loss(fl_dis_pred+face_id[0:1].detach(), reg_fls_gt)
+        loss_reg_fls = torch.nn.functional.l1_loss(
+            fl_dis_pred + face_id[:1].detach(), reg_fls_gt
+        )
 
         # reg fls laplacian
         ''' use laplacian smooth loss '''
         loss_laplacian = 0.
         if (self.opt_parser.lambda_laplacian_smooth_loss > 0.0):
-            n1 = [1] + list(range(0, 16)) + [18] + list(range(17, 21)) + [23] + list(range(22, 26)) + \
-                 [28] + list(range(27, 35)) + [41] + list(range(36, 41)) + [47] + list(range(42, 47)) + \
-                 [59] + list(range(48, 59)) + [67] + list(range(60, 67))
+            n1 = (
+                (
+                    (
+                        (
+                            (
+                                [1]
+                                + list(range(16))
+                                + [18]
+                                + list(range(17, 21))
+                                + [23]
+                                + list(range(22, 26))
+                                + [28]
+                            )
+                            + list(range(27, 35))
+                            + [41]
+                        )
+                        + list(range(36, 41))
+                        + [47]
+                    )
+                    + list(range(42, 47))
+                    + [59]
+                )
+                + list(range(48, 59))
+                + [67]
+            ) + list(range(60, 67))
             n2 = list(range(1, 17)) + [15] + list(range(18, 22)) + [20] + list(range(23, 27)) + [25] + \
-                 list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
-                 list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
-            V = (fl_dis_pred + face_id[0:1].detach()).view(-1, 68, 3)
+                     list(range(28, 36)) + [34] + list(range(37, 42)) + [36] + list(range(43, 48)) + [42] + \
+                     list(range(49, 60)) + [48] + list(range(61, 68)) + [60]
+            V = (fl_dis_pred + face_id[:1].detach()).view(-1, 68, 3)
             L_V = V - 0.5 * (V[:, n1, :] + V[:, n2, :])
             G = reg_fls_gt.view(-1, 68, 3)
             L_G = G - 0.5 * (G[:, n1, :] + G[:, n2, :])
@@ -156,7 +182,7 @@ class Speaker_aware_branch():
             self.opt_G.step()
 
         # reconstruct face through pos
-        fl_dis_pred = fl_dis_pred + face_id[0:1].detach()
+        fl_dis_pred = fl_dis_pred + face_id[:1].detach()
 
         return fl_dis_pred, pos_pred, face_id[0:1, :], (loss, loss_reg_fls, loss_laplacian)
 
@@ -227,7 +253,7 @@ class Speaker_aware_branch():
                     input_face_id = self.std_face_id
 
                 fl_dis_pred_pos, pos_pred, input_face_id, (loss, loss_g, loss_laplacian) = \
-                    self.__train_speaker_aware__(inputs_fl_segments, inputs_au_segments, input_face_id,
+                        self.__train_speaker_aware__(inputs_fl_segments, inputs_au_segments, input_face_id,
                                                  is_training=is_training)
 
                 fl_dis_pred_pos = fl_dis_pred_pos.data.cpu().numpy()
@@ -260,11 +286,10 @@ class Speaker_aware_branch():
                     #     fps=62.5, av_name='e{:04d}_{}_{}'.format(epoch, i, postfix),
                     #     postfix=postfix, root_dir=self.opt_parser.root_dir, ifsmooth=ifsmooth)
 
-                if (True):
-                    if (self.opt_parser.show_animation):
-                        print('show animation ....')
-                        save_fls_av(fls_pred_pos_list, 'pred', ifsmooth=True)
-                        save_fls_av(std_fls_list, 'std', ifsmooth=False)
+                if True and self.opt_parser.show_animation:
+                    print('show animation ....')
+                    save_fls_av(fls_pred_pos_list, 'pred', ifsmooth=True)
+                    save_fls_av(std_fls_list, 'std', ifsmooth=False)
 
             if (self.opt_parser.verbose <= 1):
                 print('{} Epoch: #{} batch #{}/{}'.format(status, epoch, i, len(dataloader)), end=': ')
@@ -317,14 +342,13 @@ class Speaker_aware_branch():
                 input_face_id = torch.tensor(jpg_shape.reshape(1, 204), requires_grad=False, dtype=torch.float).to(device)
 
                 ''' register face '''
-                if (True):
-                    landmarks = input_face_id.detach().cpu().numpy().reshape(68, 3)
-                    frame_t_shape = landmarks[self.t_shape_idx, :]
-                    T, distance, itr = icp(frame_t_shape, self.anchor_t_shape)
-                    landmarks = np.hstack((landmarks, np.ones((68, 1))))
-                    registered_landmarks = np.dot(T, landmarks.T).T
-                    input_face_id = torch.tensor(registered_landmarks[:, 0:3].reshape(1, 204), requires_grad=False,
-                                                 dtype=torch.float).to(device)
+                landmarks = input_face_id.detach().cpu().numpy().reshape(68, 3)
+                frame_t_shape = landmarks[self.t_shape_idx, :]
+                T, distance, itr = icp(frame_t_shape, self.anchor_t_shape)
+                landmarks = np.hstack((landmarks, np.ones((68, 1))))
+                registered_landmarks = np.dot(T, landmarks.T).T
+                input_face_id = torch.tensor(registered_landmarks[:, 0:3].reshape(1, 204), requires_grad=False,
+                                             dtype=torch.float).to(device)
 
                 for j in range(0, inputs_fl.shape[0], seg_bs):
                     # Step 3.1: load segments
@@ -339,7 +363,7 @@ class Speaker_aware_branch():
                         continue
 
                     fl_dis_pred_pos, pos_pred, input_face_id, (loss, loss_reg_fls, loss_laplacian, loss_pos) = \
-                        self.__train_speaker_aware__(inputs_fl_segments, inputs_au_segments, inputs_emb_segments,
+                            self.__train_speaker_aware__(inputs_fl_segments, inputs_au_segments, inputs_emb_segments,
                                                        input_face_id,  inputs_reg_fl_segments, inputs_rot_tran_segments,
                                                      inputs_rot_quat_segments,
                                                      is_training=False, use_residual=True)
@@ -354,15 +378,11 @@ class Speaker_aware_branch():
 
                     fl_dis_pred_pos = fl_dis_pred_pos.reshape((-1, 68, 3))
                     fl_std = fl_std.reshape((-1, 68, 3))
-                    if(self.opt_parser.pos_dim == 12):
+                    if (self.opt_parser.pos_dim == 12):
                         pos_pred = pos_pred.reshape((-1, 3, 4))
                         for k in range(fl_dis_pred_pos.shape[0]):
                             fl_dis_pred_pos[k] = np.dot(pos_pred[k, :3, :3].T + np.eye(3),
                                                         (fl_dis_pred_pos[k] - pos_pred[k, :, 3].T).T).T
-                        pos_std = pos_std.reshape((-1, 3, 4))
-                        for k in range(fl_std.shape[0]):
-                            fl_std[k] = np.dot(pos_std[k, :3, :3].T + np.eye(3),
-                                                        (fl_std[k] - pos_std[k, :, 3].T).T).T
                     else:
                         smooth_length = int(min(pos_pred.shape[0] - 1, 27) // 2 * 2 + 1)
                         pos_pred = savgol_filter(pos_pred, smooth_length, 3, axis=0)
@@ -371,16 +391,15 @@ class Speaker_aware_branch():
                         for k in range(fl_dis_pred_pos.shape[0]):
                             fl_dis_pred_pos[k] = np.dot(R.from_quat(quat[k]).as_matrix().T,
                                                         (fl_dis_pred_pos[k] - trans[k:k+1]).T).T
-                        pos_std = pos_std.reshape((-1, 3, 4))
-                        for k in range(fl_std.shape[0]):
-                            fl_std[k] = np.dot(pos_std[k, :3, :3].T + np.eye(3),
-                                               (fl_std[k] - pos_std[k, :, 3].T).T).T
-
+                    pos_std = pos_std.reshape((-1, 3, 4))
+                    for k in range(fl_std.shape[0]):
+                        fl_std[k] = np.dot(pos_std[k, :3, :3].T + np.eye(3),
+                                                    (fl_std[k] - pos_std[k, :, 3].T).T).T
                     fls_pred_pos_list += [fl_dis_pred_pos.reshape((-1, 204))]
                     std_fls_list += [fl_std.reshape((-1, 204))]
 
                 fake_fls_np = np.concatenate(fls_pred_pos_list)
-                filename = 'pred_fls_{}_{}.txt'.format(video_name.split('/')[-1], key)
+                filename = f"pred_fls_{video_name.split('/')[-1]}_{key}.txt"
                 np.savetxt(os.path.join('examples', filename), fake_fls_np, fmt='%.6f')
 
 
@@ -415,22 +434,25 @@ class Speaker_aware_branch():
             self.__train_pass__(epoch=0, log_loss=eval_loss, is_training=False)
 
     def __tensorboard_write__(self, status, loss, t):
-        if (self.opt_parser.write):
+        if self.opt_parser.write:
             for key in loss.keys():
-                self.writer.add_scalar('{}_loss_{}_{}'.format(status, t, key), loss[key].per(t),
-                                       self.writer_count[status + '_' + t])
+                self.writer.add_scalar(
+                    f'{status}_loss_{t}_{key}',
+                    loss[key].per(t),
+                    self.writer_count[f'{status}_{t}'],
+                )
                 loss[key].clean(t)
-            self.writer_count[status + '_' + t] += 1
+            self.writer_count[f'{status}_{t}'] += 1
         else:
             for key in loss.keys():
                 loss[key].clean(t)
 
     def __save_model__(self, save_type, epoch):
-        if (self.opt_parser.write):
-            torch.save({
-                'G': self.G.state_dict(),
-                'epoch': epoch
-            }, os.path.join(self.opt_parser.ckpt_dir, 'ckpt_{}.pth'.format(save_type)))
+        if self.opt_parser.write:
+            torch.save(
+                {'G': self.G.state_dict(), 'epoch': epoch},
+                os.path.join(self.opt_parser.ckpt_dir, f'ckpt_{save_type}.pth'),
+            )
 
     def adjust_learning_rate(self, optimizer, epoch):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""

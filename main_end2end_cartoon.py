@@ -8,6 +8,7 @@
  
 """
 
+
 import sys
 sys.path.append('thirdparty/AdaptiveWingLoss')
 import os, glob
@@ -65,7 +66,7 @@ opt_parser = parser.parse_args()
 
 DEMO_CH = opt_parser.jpg.split('.')[0]
 
-shape_3d = np.loadtxt('examples_cartoon/{}_face_close_mouth.txt'.format(DEMO_CH))
+shape_3d = np.loadtxt(f'examples_cartoon/{DEMO_CH}_face_close_mouth.txt')
 
 ''' STEP 3: Generate audio data as input to audio branch '''
 au_data = []
@@ -74,12 +75,14 @@ ains = glob.glob1('examples', '*.wav')
 ains = [item for item in ains if item is not 'tmp.wav']
 ains.sort()
 for ain in ains:
-    os.system('ffmpeg -y -loglevel error -i examples/{} -ar 16000 examples/tmp.wav'.format(ain))
-    shutil.copyfile('examples/tmp.wav', 'examples/{}'.format(ain))
+    os.system(
+        f'ffmpeg -y -loglevel error -i examples/{ain} -ar 16000 examples/tmp.wav'
+    )
+    shutil.copyfile('examples/tmp.wav', f'examples/{ain}')
 
     # au embedding
     from thirdparty.resemblyer_util.speaker_emb import get_spk_emb
-    me, ae = get_spk_emb('examples/{}'.format(ain))
+    me, ae = get_spk_emb(f'examples/{ain}')
     au_emb.append(me.reshape(-1))
 
     print('Processing audio file', ain)
@@ -132,7 +135,7 @@ print('finish gen fls')
 fls_names = glob.glob1('examples_cartoon', 'pred_fls_*.txt')
 fls_names.sort()
 
-for i in range(0,len(fls_names)):
+for i in range(len(fls_names)):
     ains = glob.glob1('examples', '*.wav')
     ains.sort()
     ain = ains[i]
@@ -162,14 +165,14 @@ for i in range(0,len(fls_names)):
     fls = fls.reshape((-1, 68, 3))
 
     if (DEMO_CH in ['paint', 'mulaney', 'cartoonM', 'beer', 'color', 'JohnMulaney', 'vangogh', 'jm', 'roy', 'lineface']):
-        r = list(range(0, 68))
+        r = list(range(68))
         fls = fls[:, r, :]
         fls = fls[:, :, 0:2].reshape(-1, 68 * 2)
         fls = np.concatenate((fls, np.tile(bound, (fls.shape[0], 1))), axis=1)
         fls = fls.reshape(-1, 160)
 
     else:
-        r = list(range(0, 48)) + list(range(60, 68))
+        r = list(range(48)) + list(range(60, 68))
         fls = fls[:, r, :]
         fls = fls[:, :, 0:2].reshape(-1, 56 * 2)
         fls = np.concatenate((fls, np.tile(bound, (fls.shape[0], 1))), axis=1)
@@ -178,14 +181,18 @@ for i in range(0,len(fls_names)):
     np.savetxt(os.path.join(output_dir, 'warped_points.txt'), fls, fmt='%.2f')
 
     # static_points.txt
-    static_frame = np.loadtxt(os.path.join('examples_cartoon', '{}_face_open_mouth.txt'.format(DEMO_CH)))
+    static_frame = np.loadtxt(
+        os.path.join('examples_cartoon', f'{DEMO_CH}_face_open_mouth.txt')
+    )
     static_frame = static_frame[r, 0:2]
     static_frame = np.concatenate((static_frame, bound.reshape(-1, 2)), axis=0)
     np.savetxt(os.path.join(output_dir, 'reference_points.txt'), static_frame, fmt='%.2f')
 
     # triangle_vtx_index.txt
-    shutil.copy(os.path.join('examples_cartoon', DEMO_CH + '_delauney_tri.txt'),
-                os.path.join(output_dir, 'triangulation.txt'))
+    shutil.copy(
+        os.path.join('examples_cartoon', f'{DEMO_CH}_delauney_tri.txt'),
+        os.path.join(output_dir, 'triangulation.txt'),
+    )
 
     os.remove(os.path.join('examples_cartoon', fls_names[i]))
 
@@ -194,35 +201,24 @@ for i in range(0,len(fls_names)):
     # ==============================================
     warp_exe = os.path.join(os.getcwd(), 'facewarp', 'facewarp.exe')
     import os
-    
+
     if (os.path.exists(os.path.join(output_dir, 'output'))):
         shutil.rmtree(os.path.join(output_dir, 'output'))
     os.mkdir(os.path.join(output_dir, 'output'))
-    os.chdir('{}'.format(os.path.join(output_dir, 'output')))
+    os.chdir(f"{os.path.join(output_dir, 'output')}")
     cur_dir = os.getcwd()
     print(cur_dir)
-    
-    if(os.name == 'nt'): 
+
+    if (os.name == 'nt'): 
         ''' windows '''
-        os.system('{} {} {} {} {} {}'.format(
-            warp_exe,
-            os.path.join(cur_dir, '..', '..', opt_parser.jpg),
-            os.path.join(cur_dir, '..', 'triangulation.txt'),
-            os.path.join(cur_dir, '..', 'reference_points.txt'),
-            os.path.join(cur_dir, '..', 'warped_points.txt'),
-            os.path.join(cur_dir, '..', '..', opt_parser.jpg_bg),
-            '-novsync -dump'))
+        os.system(
+            f"{warp_exe} {os.path.join(cur_dir, '..', '..', opt_parser.jpg)} {os.path.join(cur_dir, '..', 'triangulation.txt')} {os.path.join(cur_dir, '..', 'reference_points.txt')} {os.path.join(cur_dir, '..', 'warped_points.txt')} {os.path.join(cur_dir, '..', '..', opt_parser.jpg_bg)}"
+        )
     else:
         ''' linux '''
-        os.system('wine {} {} {} {} {} {}'.format(
-            warp_exe,
-            os.path.join(cur_dir, '..', '..', opt_parser.jpg),
-            os.path.join(cur_dir, '..', 'triangulation.txt'),
-            os.path.join(cur_dir, '..', 'reference_points.txt'),
-            os.path.join(cur_dir, '..', 'warped_points.txt'),
-            os.path.join(cur_dir, '..', '..', opt_parser.jpg_bg),
-            '-novsync -dump'))
-    os.system('ffmpeg -y -r 62.5 -f image2 -i "%06d.tga" -i {} -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -shortest -strict -2 {}'.format(
-        os.path.join(cur_dir, '..', '..', '..', 'examples', ain),
-        os.path.join(cur_dir, '..', 'out.mp4')
-    ))
+        os.system(
+            f"wine {warp_exe} {os.path.join(cur_dir, '..', '..', opt_parser.jpg)} {os.path.join(cur_dir, '..', 'triangulation.txt')} {os.path.join(cur_dir, '..', 'reference_points.txt')} {os.path.join(cur_dir, '..', 'warped_points.txt')} {os.path.join(cur_dir, '..', '..', opt_parser.jpg_bg)}"
+        )
+    os.system(
+        f"""ffmpeg -y -r 62.5 -f image2 -i "%06d.tga" -i {os.path.join(cur_dir, '..', '..', '..', 'examples', ain)} -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -shortest -strict -2 {os.path.join(cur_dir, '..', 'out.mp4')}"""
+    )

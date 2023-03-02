@@ -31,11 +31,11 @@ class Audio2landmark_Dataset(data.Dataset):
         self.num_window_step = num_window_step
 
         # Step 1 : load A / V data from dump files
-        print('Loading Data {}_{}'.format(dump_name, status))
+        print(f'Loading Data {dump_name}_{status}')
 
-        with open(os.path.join(self.dump_dir, '{}_{}_{}au.pickle'.format(dump_name, status, noautovc)), 'rb') as fp:
+        with open(os.path.join(self.dump_dir, f'{dump_name}_{status}_{noautovc}au.pickle'), 'rb') as fp:
             self.au_data = pickle.load(fp)
-        with open(os.path.join(self.dump_dir, '{}_{}_{}fl.pickle'.format(dump_name, status, noautovc)), 'rb') as fp:
+        with open(os.path.join(self.dump_dir, f'{dump_name}_{status}_{noautovc}fl.pickle'), 'rb') as fp:
             self.fl_data = pickle.load(fp)
 
         valid_idx = list(range(len(self.au_data)))
@@ -62,7 +62,10 @@ class Audio2landmark_Dataset(data.Dataset):
 
 
         au_mean_std = np.loadtxt('dataset/utils/MEAN_STD_NOAUTOVC_AU.txt') # np.mean(self.au_data[0][0]), np.std(self.au_data[0][0])
-        au_mean, au_std = au_mean_std[0:au_mean_std.shape[0]//2], au_mean_std[au_mean_std.shape[0]//2:]
+        au_mean, au_std = (
+            au_mean_std[: au_mean_std.shape[0] // 2],
+            au_mean_std[au_mean_std.shape[0] // 2 :],
+        )
 
         self.au_data = [((au - au_mean) / au_std, info) for au, info in self.au_data]
 
@@ -131,9 +134,10 @@ def norm_output_fls_rot(fl_data_i, anchor_t_shape=None):
     # fl_data_i = savgol_filter(fl_data_i, 21, 3, axis=0)
 
     t_shape_idx = (27, 28, 29, 30, 33, 36, 39, 42, 45)
-    if(anchor_t_shape is None):
+    if (anchor_t_shape is None):
         anchor_t_shape = np.loadtxt(
-            r'dataset/utils/ANCHOR_T_SHAPE_{}.txt'.format(len(t_shape_idx)))
+            f'dataset/utils/ANCHOR_T_SHAPE_{len(t_shape_idx)}.txt'
+        )
         s = np.abs(anchor_t_shape[5, 0] - anchor_t_shape[8, 0])
         anchor_t_shape = anchor_t_shape / s * 1.0
         c2 = np.mean(anchor_t_shape[[4,5,8], :], axis=0)
@@ -192,14 +196,14 @@ class Speaker_aware_branch_Dataset(data.Dataset):
         self.num_window_step = num_window_step
 
         # Step 1 : load A / V data from dump files
-        print('Loading Data {}_{}'.format(dump_name, status))
+        print(f'Loading Data {dump_name}_{status}')
 
-        with open(os.path.join(self.dump_dir, '{}_{}_{}au.pickle'.format(dump_name, status, noautovc)), 'rb') as fp:
+        with open(os.path.join(self.dump_dir, f'{dump_name}_{status}_{noautovc}au.pickle'), 'rb') as fp:
             self.au_data = pickle.load(fp)
-        with open(os.path.join(self.dump_dir, '{}_{}_{}fl.pickle'.format(dump_name, status, noautovc)), 'rb') as fp:
+        with open(os.path.join(self.dump_dir, f'{dump_name}_{status}_{noautovc}fl.pickle'), 'rb') as fp:
             self.fl_data = pickle.load(fp)
         try:
-            with open(os.path.join(self.dump_dir, '{}_{}_gaze.pickle'.format(dump_name, status)), 'rb') as fp:
+            with open(os.path.join(self.dump_dir, f'{dump_name}_{status}_gaze.pickle'), 'rb') as fp:
                 gaze = pickle.load(fp)
                 self.rot_trans = gaze['rot_trans']
                 self.rot_quats = gaze['rot_quat']
@@ -210,7 +214,7 @@ class Speaker_aware_branch_Dataset(data.Dataset):
                 # print('quat:', 2 * np.arccos(np.abs(self.rot_eulers[0][0].dot(self.rot_eulers[0][5].T))))
                 # exit(0)
         except:
-            print(os.path.join(self.dump_dir, '{}_{}_gaze.pickle'.format(dump_name, status)))
+            print(os.path.join(self.dump_dir, f'{dump_name}_{status}_gaze.pickle'))
             print('gaze file not found')
             exit(-1)
 
@@ -253,7 +257,10 @@ class Speaker_aware_branch_Dataset(data.Dataset):
 
 
         au_mean_std = np.loadtxt('dataset/utils/MEAN_STD_AUTOVC_RETRAIN_MEL_AU.txt') # np.mean(self.au_data[0][0]), np.std(self.au_data[0][0])
-        au_mean, au_std = au_mean_std[0:au_mean_std.shape[0]//2], au_mean_std[au_mean_std.shape[0]//2:]
+        au_mean, au_std = (
+            au_mean_std[: au_mean_std.shape[0] // 2],
+            au_mean_std[au_mean_std.shape[0] // 2 :],
+        )
 
         self.au_data = [((au - au_mean) / au_std, info) for au, info in self.au_data]
 

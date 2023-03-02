@@ -64,7 +64,9 @@ def draw_gaussian(image, point, sigma):
             ] = image[img_y[0] - 1:img_y[1], img_x[0] - 1:img_x[1]] + g[g_y[0] - 1:g_y[1], g_x[0] - 1:g_x[1]]
             correct = True
         except:
-            print('img_x: {}, img_y: {}, g_x:{}, g_y:{}, point:{}, g_shape:{}, ul:{}, br:{}'.format(img_x, img_y, g_x, g_y, point, g.shape, ul, br))
+            print(
+                f'img_x: {img_x}, img_y: {img_y}, g_x:{g_x}, g_y:{g_y}, point:{point}, g_shape:{g.shape}, ul:{ul}, br:{br}'
+            )
             ul = [np.floor(np.floor(point[0]) - 3 * sigma),
                 np.floor(np.floor(point[1]) - 3 * sigma)]
             br = [np.floor(np.floor(point[0]) + 3 * sigma),
@@ -75,7 +77,6 @@ def draw_gaussian(image, point, sigma):
                 int(max(1, ul[1])) + int(max(1, -ul[1]))]
             img_x = [int(max(1, ul[0])), int(min(br[0], image.shape[1]))]
             img_y = [int(max(1, ul[1])), int(min(br[1], image.shape[0]))]
-            pass
     image[image > 1] = 1
     return image
 
@@ -112,7 +113,7 @@ def transform(point, center, scale, resolution, rotation=0, invert=False):
 
     if invert:
         t = np.linalg.inv(t)
-    new_point = (np.matmul(t, _pt))[0:2]
+    new_point = (np.matmul(t, _pt))[:2]
 
     return new_point.astype(int)
 
@@ -154,15 +155,14 @@ def cv_rotate(image, landmarks, heatmap, rot, scale, resolution=256):
     new_landmarks = img_mat.dot(stacked_landmarks.T).T
     if np.max(new_landmarks) > 255 or np.min(new_landmarks) < 0:
         return image, landmarks, heatmap
-    else:
-        new_image = cv2.warpAffine(image, img_mat, (resolution, resolution))
-        if heatmap is not None:
-            new_heatmap = np.zeros((heatmap.shape[0], 64, 64))
-            for i in range(heatmap.shape[0]):
-                if new_landmarks[i][0] > 0:
-                    new_heatmap[i] = draw_gaussian(new_heatmap[i],
-                                                   new_landmarks[i]/4.0+1, 1)
-        return new_image, new_landmarks, new_heatmap
+    new_image = cv2.warpAffine(image, img_mat, (resolution, resolution))
+    if heatmap is not None:
+        new_heatmap = np.zeros((heatmap.shape[0], 64, 64))
+        for i in range(heatmap.shape[0]):
+            if new_landmarks[i][0] > 0:
+                new_heatmap[i] = draw_gaussian(new_heatmap[i],
+                                               new_landmarks[i]/4.0+1, 1)
+    return new_image, new_landmarks, new_heatmap
 
 def show_landmarks(image, heatmap, gt_landmarks, gt_heatmap):
     """Show image with pred_landmarks"""

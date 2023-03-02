@@ -45,9 +45,9 @@ VAL_LANDMARKS_DIR = args.val_landmarks_dir
 CKPT_SAVE_PATH = args.ckpt_save_path
 BATCH_SIZE = args.batch_size
 PRETRAINED_WEIGHTS = args.pretrained_weights
-GRAY_SCALE = False if args.gray_scale == 'False' else True
+GRAY_SCALE = args.gray_scale != 'False'
 HG_BLOCKS = args.hg_blocks
-END_RELU = False if args.end_relu == 'False' else True
+END_RELU = args.end_relu != 'False'
 NUM_LANDMARKS = args.num_landmarks
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

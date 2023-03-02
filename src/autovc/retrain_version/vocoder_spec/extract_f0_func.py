@@ -42,7 +42,7 @@ def extract_f0_func(gender):
 
     cep_all = []
     dirName, subdirList, _ = next(os.walk(rootDir))
-    print('Found directory: %s' % dirName)
+    print(f'Found directory: {dirName}')
     for subdir in sorted(pt):
         print(subdir)
         if not os.path.exists(os.path.join(targetDir, subdir)):
@@ -50,10 +50,10 @@ def extract_f0_func(gender):
         if not os.path.exists(os.path.join(targetDir_f0, subdir)):
             os.makedirs(os.path.join(targetDir_f0, subdir))
         _, _, fileList = next(os.walk(os.path.join(dirName, subdir)))
-        if gender == 'M':
-            lo, hi = 50, 250
-        elif gender == 'F':
+        if gender == 'F':
             lo, hi = 100, 600
+        elif gender == 'M':
+            lo, hi = 50, 250
         else:
             raise ValueError
         prng = RandomState(0)

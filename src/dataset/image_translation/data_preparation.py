@@ -36,7 +36,7 @@ def landmark_extraction(si, ei):
             pass
 
 
-    if(not os.path.isfile(os.path.join(out_dir, 'filename_index_new.txt'))):
+    if (not os.path.isfile(os.path.join(out_dir, 'filename_index_new.txt'))):
         # generate all file list
 
         clip_len_count = [0] * 500
@@ -63,15 +63,15 @@ def landmark_extraction(si, ei):
             cur_src_dir = os.path.join(src_dir, id, clip)
             cur_files = glob.glob1(cur_src_dir, '*.mp4')
 
-            cur_files = np.random.permutation(cur_files)[0:1]
+            cur_files = np.random.permutation(cur_files)[:1]
 
-            cur_files = ['{}_x_{}_x_{}'.format(id, clip, f) for f in cur_files]
+            cur_files = [f'{id}_x_{clip}_x_{f}' for f in cur_files]
 
             files += cur_files
 
         with open(os.path.join(out_dir, 'filename_index_new.txt'), 'w') as f:
             for i, file in enumerate(files):
-                f.write('{} {}\n'.format(i, file))
+                f.write(f'{i} {file}\n')
     else:
         with open(os.path.join(out_dir, 'filename_index_new.txt'), 'r') as f:
             lines = f.readlines()
@@ -99,7 +99,7 @@ def landmark_extraction(si, ei):
             c = Av2Flau_Convertor(video_dir=os.path.join(src_dir, file),
                                   out_dir=out_dir, idx=idx)
             c.convert() #  (save_audio=False, register=False, show=False)
-            print('Idx: {}, Processed time (min): {}'.format(idx, (time.time() - st) / 60.0))
+            print(f'Idx: {idx}, Processed time (min): {(time.time() - st) / 60.0}')
 
 def landmark_image_to_data(si, ei, show=False):
     '''
@@ -125,14 +125,14 @@ def landmark_image_to_data(si, ei, show=False):
         mp4_vname = mp4_filename[1]
         mp4_vid = mp4_filename[2][:-3]
         print(mp4_id, mp4_vname, mp4_vid)
-        video_dir = os.path.join(mp4_dir, mp4_id, mp4_vname, mp4_vid+'.mp4')
-        print('video_dir : ' + video_dir)
+        video_dir = os.path.join(mp4_dir, mp4_id, mp4_vname, f'{mp4_vid}.mp4')
+        print(f'video_dir : {video_dir}')
         video = cv2.VideoCapture(video_dir)
         if (video.isOpened() == False):
             print('Unable to open video file')
             exit(0)
 
-        if(show==True):
+        if (show==True):
             length = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
             fps = video.get(cv2.CAP_PROP_FPS)
             w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -142,12 +142,11 @@ def landmark_image_to_data(si, ei, show=False):
 
             # skip first several frames due to landmark extraction
             start_idx = fls[0, 0].astype(int)
-            print('Skip beginning # {} frames'.format(start_idx))
+            print(f'Skip beginning # {start_idx} frames')
 
             for _ in range(start_idx):
                 ret, img_video = video.read()
 
-             # save video and landmark in parallel
             for j in range(fls.shape[0]):
                 img_fl = np.ones(shape=(224, 224, 3)) * 255
                 idx = fls[j, 0]
@@ -169,7 +168,7 @@ def landmark_image_to_data(si, ei, show=False):
         else:
             # skip first several frames due to landmark extraction
             start_idx = fls[0, 0].astype(int)
-            print('Skip beginning # {} frames'.format(start_idx))
+            print(f'Skip beginning # {start_idx} frames')
             for _ in range(start_idx):
                 ret, img_video = video.read()
 
@@ -206,7 +205,7 @@ def vis_landmark_on_img(img, shape, linewidth=2):
             cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                      (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-    draw_curve(list(range(0, 16)), color=(255, 144, 25))  # jaw
+    draw_curve(list(range(16)), color=(255, 144, 25))
     draw_curve(list(range(17, 21)), color=(50, 205, 50))  # eye brow
     draw_curve(list(range(22, 26)), color=(50, 205, 50))
     draw_curve(list(range(27, 35)), color=(208, 224, 63))  # nose
@@ -230,7 +229,7 @@ def vis_landmark_on_img98(img, shape, linewidth=2):
             cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                      (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-    draw_curve(list(range(0, 32)), color=(255, 144, 25))  # jaw
+    draw_curve(list(range(32)), color=(255, 144, 25))
     draw_curve(list(range(33, 41)), color=(50, 205, 50), loop=True)  # eye brow
     draw_curve(list(range(42, 50)), color=(50, 205, 50), loop=True)
     draw_curve(list(range(51, 59)), color=(208, 224, 63))  # nose
@@ -254,7 +253,7 @@ def vis_landmark_on_img74(img, shape, linewidth=2):
             cv2.line(img, (shape[idx_list[0], 0], shape[idx_list[0], 1]),
                      (shape[idx_list[-1] + 1, 0], shape[idx_list[-1] + 1, 1]), color, lineWidth)
 
-    draw_curve(list(range(0, 16)), color=(255, 144, 25))  # jaw
+    draw_curve(list(range(16)), color=(255, 144, 25))
     draw_curve(list(range(17, 21)), color=(50, 205, 50), loop=False)  # eye brow
     draw_curve(list(range(22, 26)), color=(50, 205, 50), loop=False)
     draw_curve(list(range(27, 35)), color=(208, 224, 63))  # nose

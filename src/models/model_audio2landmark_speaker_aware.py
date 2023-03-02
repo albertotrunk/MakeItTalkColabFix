@@ -70,8 +70,7 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
     if dropout is not None:
         scores = dropout(scores)
 
-    output = torch.matmul(scores, v)
-    return output
+    return torch.matmul(scores, v)
 
 
 class MultiHeadAttention(nn.Module):
@@ -108,11 +107,9 @@ class MultiHeadAttention(nn.Module):
 
         # concatenate heads and put through final linear layer
         concat = scores.transpose(1, 2).contiguous() \
-            .view(bs, -1, self.d_model)
+                .view(bs, -1, self.d_model)
 
-        output = self.out(concat)
-
-        return output
+        return self.out(concat)
 
 class FeedForward(nn.Module):
     def __init__(self, d_model, d_ff=2048, dropout = 0.1):
@@ -138,9 +135,12 @@ class Norm(nn.Module):
         self.eps = eps
 
     def forward(self, x):
-        norm = self.alpha * (x - x.mean(dim=-1, keepdim=True)) \
-               / (x.std(dim=-1, keepdim=True) + self.eps) + self.bias
-        return norm
+        return (
+            self.alpha
+            * (x - x.mean(dim=-1, keepdim=True))
+            / (x.std(dim=-1, keepdim=True) + self.eps)
+            + self.bias
+        )
 
 # build an encoder layer with one multi-head attention layer and one # feed-forward layer
 class EncoderLayer(nn.Module):
@@ -189,7 +189,7 @@ class DecoderLayer(nn.Module):
 
     # We can then build a convenient cloning function that can generate multiple layers:
 def get_clones(module, N):
-    return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+    return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
 
 class Encoder(nn.Module):
@@ -236,7 +236,7 @@ class Audio2landmark_speaker_aware_old(nn.Module):
 
         self.pos_dim = pos_dim
 
-        audio_feat_size = 80 if not use_prior_net else 161
+        audio_feat_size = 161 if use_prior_net else 80
         audio_feat_size = 258 if is_noautovc else audio_feat_size
 
         # init audio encoder with content model
@@ -339,7 +339,7 @@ class Audio2landmark_speaker_aware(nn.Module):
                                              bidirectional=False,
                                              batch_first=True)
 
-        self.use_audio_projection = not (audio_dim == c_enc_hidden_size)
+        self.use_audio_projection = audio_dim != c_enc_hidden_size
         if(self.use_audio_projection):
             self.audio_projection = nn.Sequential(
                 nn.Linear(in_features=c_enc_hidden_size, out_features=256),
@@ -447,9 +447,7 @@ class Transformer_DT(nn.Module):
         D_input = torch.stack(D_input, dim=0)
         D_output = self.encoder(D_input)
         D_output = torch.max(D_output, dim=1, keepdim=False)[0]
-        d = self.out(D_output)
-        # d = torch.sigmoid(d)
-        return d
+        return self.out(D_output)
 
 
 class TalkingToon_spk2res_lstmgan_DT(nn.Module):
@@ -483,10 +481,8 @@ class TalkingToon_spk2res_lstmgan_DT(nn.Module):
         feat = feat[0].transpose(0, 1)
 
         win_size = feat.shape[0] - 1 if feat.shape[0] <= win_size else win_size
-        D_input = [feat[i:i+win_size:win_step] for i in range(0, feat.shape[0]-win_size)]
+        D_input = [feat[i:i+win_size:win_step] for i in range(feat.shape[0]-win_size)]
         D_input = torch.stack(D_input, dim=0)
         D_output, _ = self.fl_DT(D_input)
         D_output = D_output[:, -1, :]
-        d = self.projection(D_output)
-        # d = torch.sigmoid(d)
-        return d
+        return self.projection(D_output)

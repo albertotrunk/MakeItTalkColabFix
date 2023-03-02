@@ -8,6 +8,7 @@
  
 """
 
+
 import os, glob
 import numpy as np
 import cv2
@@ -17,11 +18,17 @@ fs = ['suit1_pred_fls_t7_audio_embed.mp4' ]
 
 for f in fs:
 
-    os.system('ffmpeg -y -i examples/{} -filter:v crop=256:256:256:0 -strict -2 examples/crop_{}'.format(f, f))
+    os.system(
+        f'ffmpeg -y -i examples/{f} -filter:v crop=256:256:256:0 -strict -2 examples/crop_{f}'
+    )
 
-    cap = cv2.VideoCapture('examples/crop_{}'.format(f))
-    writer = cv2.VideoWriter('examples/tmp_{}.mp4'.format(f[:-4]),
-                                     cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 62.5, (256, 256))
+    cap = cv2.VideoCapture(f'examples/crop_{f}')
+    writer = cv2.VideoWriter(
+        f'examples/tmp_{f[:-4]}.mp4',
+        cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
+        62.5,
+        (256, 256),
+    )
 
     length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -51,14 +58,14 @@ for f in fs:
     mask[-50:, 128:] = 1
 
     p0 = cv2.goodFeaturesToTrack(old_gray, mask = mask, **feature_params)
-    p0 = p0[0:1]
+    p0 = p0[:1]
 
     ori_ab = None
 
     # Create a mask image for drawing purposes
     mask = np.zeros_like(old_frame)
     ii = 0
-    while(ii>-1):
+    while (ii>-1):
         print(f, ii, length)
         ii += 1
 
@@ -75,7 +82,7 @@ for f in fs:
         good_old = p0[st==1]
 
         # draw the tracks
-        for i,(new,old) in enumerate(zip(good_new,good_old)):
+        for new, old in zip(good_new,good_old):
             a,b = new.ravel()
             c,d = old.ravel()
             # mask = cv2.line(mask, (a,b),(c,d), color[i].tolist(), 2)
@@ -101,13 +108,12 @@ for f in fs:
     writer.release()
 
     f = f[:-4]
-    os.system('ffmpeg -loglevel error -y -i {} -vn {}'.format(
-        os.path.join('../examples', '{}.mp4'.format(f)), os.path.join('../examples', 'a_' + f + '.wav')
-    ))
+    os.system(
+        f"ffmpeg -loglevel error -y -i {os.path.join('../examples', f'{f}.mp4')} -vn {os.path.join('../examples', f'a_{f}.wav')}"
+    )
 
-    os.system('ffmpeg -loglevel error -y -i {} -i {} -pix_fmt yuv420p -shortest -strict -2 {}'.format(
-        os.path.join('../examples', 'tmp_{}.mp4'.format(f)), os.path.join('../examples', 'a_' + f + '.wav'),
-        os.path.join('../examples', 'f_' + f + '.mp4')
-    ))
-    os.remove(os.path.join('../examples', 'tmp_{}.mp4'.format(f)))
-    os.remove(os.path.join('../examples', 'a_' + f + '.wav'))
+    os.system(
+        f"ffmpeg -loglevel error -y -i {os.path.join('../examples', f'tmp_{f}.mp4')} -i {os.path.join('../examples', f'a_{f}.wav')} -pix_fmt yuv420p -shortest -strict -2 {os.path.join('../examples', f'f_{f}.mp4')}"
+    )
+    os.remove(os.path.join('../examples', f'tmp_{f}.mp4'))
+    os.remove(os.path.join('../examples', f'a_{f}.wav'))

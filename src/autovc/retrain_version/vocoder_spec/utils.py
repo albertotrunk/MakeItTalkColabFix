@@ -194,7 +194,7 @@ def write_metadata(metadata, out_dir, sr=16000):
     with open(os.path.join(out_dir, 'train.txt'), 'w', encoding='utf-8') as f:
         for m in metadata:
             f.write('|'.join([str(x) for x in m]) + '\n')
-    frames = sum([m[2] for m in metadata])
+    frames = sum(m[2] for m in metadata)
     hours = frames / sr / 3600
     print('Wrote %d utterances, %d time steps (%.2f hours)' % (len(metadata), frames, hours))
     
@@ -217,8 +217,7 @@ def world_harvest(x, fs, fft_size=1024, hopsz=256, lo=50, hi=550):
 import torch
 def get_mask_from_lengths(lengths, max_len):
     ids = torch.arange(0, max_len, device=lengths.device)
-    mask = (ids >= lengths.unsqueeze(1)).byte()
-    return mask
+    return (ids >= lengths.unsqueeze(1)).byte()
     
     
 def pad_sequence_cnn(sequences, padding_value=0):
@@ -227,16 +226,16 @@ def pad_sequence_cnn(sequences, padding_value=0):
     # in sequences are same and fetching those from sequences[0]
     max_size = sequences[0].size()
     channel_dim = max_size[0]
-    max_len = max([s.size(-1) for s in sequences])
-    
+    max_len = max(s.size(-1) for s in sequences)
+
     out_dims = (len(sequences), channel_dim, max_len)
-    
+
     out_tensor = sequences[0].data.new(*out_dims).fill_(padding_value)
     for i, tensor in enumerate(sequences):
         length = tensor.size(-1)
         # use index notation to prevent duplicate references to the tensor
         out_tensor[i, :, :length] = tensor
-    
+
     return out_tensor    
 
 
